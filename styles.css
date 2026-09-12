@@ -3,6 +3,7 @@
 :root {
   --paper: #fbfaf8;
   --ink: #101215;
+  --ink-lit: #000000;
   --muted: #6b7078;
   --rule: #dcd8d2;
   --rule-strong: #101215;
@@ -14,6 +15,7 @@
   :root:not([data-theme="light"]) {
     --paper: #0d0f12;
     --ink: #eceae6;
+    --ink-lit: #ffffff;
     --muted: #8d939c;
     --rule: #262a31;
     --rule-strong: #eceae6;
@@ -280,5 +282,147 @@ a:hover {
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+  }
+}
+
+/* ---- Graph rail ------------------------------------------------------ */
+
+.graph-rail {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 240px;
+  height: 100vh;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: none;
+  cursor: default; /* TODO: pointer once /graph is live */
+  --proximity: 0;
+}
+
+.graph-rail svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: color-mix(in srgb, var(--rule-strong) calc(var(--proximity, 0) * 100%), var(--muted));
+  opacity: calc(0.4 + var(--proximity, 0) * 0.6);
+  transition: color 0.4s ease-out, opacity 0.4s ease-out;
+}
+
+.graph-rail:hover svg,
+.graph-rail.is-awake svg {
+  color: var(--rule-strong);
+  opacity: 1;
+}
+
+.gdiagram .ghit {
+  fill: transparent;
+  cursor: default; /* TODO: pointer once /graph is live */
+}
+
+.gdiagram .gnode,
+.gdiagram .gedge {
+  transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out;
+}
+
+/* hovering a node lights up only it and its direct neighbors */
+.gdiagram[data-hover="1"] .gnode {
+  opacity: 0.3;
+}
+
+.gdiagram[data-hover="1"] .gnode[data-near="1"] {
+  opacity: 1;
+}
+
+g[stroke="none"] > .gnode[data-near="1"] {
+  fill: var(--accent);
+}
+
+g[fill="var(--paper)"] > .gnode[data-near="1"] {
+  stroke: var(--accent);
+}
+
+.gdiagram[data-hover="1"] .gedge {
+  opacity: 0.15;
+}
+
+/* rail-trunk segments stay fully invisible on hover, not just dimmed, or
+   long corridor spans would flicker */
+.gdiagram[data-hover="1"] .gedge[data-rail="1"] {
+  opacity: 0;
+}
+
+.gdiagram[data-hover="1"] .gedge[data-onpath="1"] {
+  opacity: 1;
+}
+
+/* the bright-at-rest backbone bus (grail-bus in generate_graph.py) still
+   dims like any other edge on hover */
+.gdiagram .grail-bus {
+  transition: opacity 0.3s ease-out;
+}
+
+.gdiagram[data-hover="1"] .grail-bus {
+  opacity: 0.15;
+}
+
+/* the directly hovered edge keeps its normal resting color, just undimmed */
+.gdiagram[data-hover="1"] .gedge[data-edgehover="1"] {
+  opacity: 1;
+}
+
+/* onpath edges get bumped to a stronger tone than their muted resting
+   color, or they'd barely read against the dimmed rest */
+g[stroke="currentColor"] > .gedge[data-onpath="1"] {
+  stroke: var(--ink-lit);
+}
+
+.gdiagram .hover-marker {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-out;
+}
+
+.gdiagram[data-hover="1"] .hover-marker {
+  opacity: 1;
+}
+
+.gdiagram .hover-marker-neighbor {
+  stroke: var(--ink-lit);
+  stroke-width: 1.1;
+}
+
+.gdiagram[data-hover="1"] .hover-marker[data-hidden="1"] {
+  opacity: 0;
+}
+
+.graph-rail:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+@media (min-width: 1440px) {
+  .graph-rail {
+    display: block;
+  }
+}
+
+/* plain opacity/color crossfades, not the kind of motion
+   prefers-reduced-motion targets -- exempt from the sitewide transition
+   kill above */
+@media (prefers-reduced-motion: reduce) {
+  .graph-rail svg {
+    transition: color 0.4s ease-out, opacity 0.4s ease-out !important;
+  }
+  .gdiagram .gnode,
+  .gdiagram .gedge {
+    transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out !important;
+  }
+  .gdiagram .hover-marker {
+    transition: opacity 0.3s ease-out !important;
   }
 }
