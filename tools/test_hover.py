@@ -39,11 +39,10 @@ def build_adjacency():
     return edges, adj
 
 
-# some edges are geometrically unreachable on purpose: resolveEdgeAt's
-# distance/first-in-source-order tie-breaks among overlapping port/connector
-# geometry always favor another edge there. Reproduced independently here
-# from generate_graph.py's own position/draw-order data, never by importing
-# graph-interactive.js, so test D stays an honest check.
+# a few port<->connector edges are unreachable: their hit-segment always
+# loses resolveEdgeAt's tie-breaks to another edge at the same node. Modeled
+# here from position/order data alone, never by importing graph-interactive.js,
+# so test D stays an honest check.
 
 
 def known_unreachable_edges(edges):

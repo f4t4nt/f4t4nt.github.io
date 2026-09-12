@@ -247,10 +247,7 @@
       hitSegments.forEach(function (seg) {
         var d = distToSegSq(x, y, seg.x1, seg.y1, seg.x2, seg.y2);
         if (d > bestD + TIE_EPS) return;
-        // several invisible corridor trunks can run exactly coincident (same
-        // x, overlapping y) -- on a true distance tie, prefer whichever
-        // segment's own endpoint (its real port/connector dock) is nearer,
-        // not whichever happened to be drawn first
+        // coincident corridor trunks tie on distance -- break by nearest dock, not draw order
         var cd = cornerDistSq(seg, x, y);
         if (d < bestD - TIE_EPS || cd < bestCornerD) {
           best = seg; bestD = d; bestCornerD = cd;
