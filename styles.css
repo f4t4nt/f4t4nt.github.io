@@ -391,8 +391,7 @@ a:hover {
 
 .gdiagram .gnode,
 .gdiagram .gedge {
-  transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out,
-    transform 0.3s ease-out;
+  transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out;
 }
 
 /* hovering a node lights up only it and its direct neighbors */
@@ -412,15 +411,6 @@ a:hover {
 
 .gdiagram .gnode[data-active="1"] {
   fill: var(--accent);
-}
-
-/* A pinned source is accent like any active vertex; what separates it from the
-   vertex currently under the pointer is that it stands larger, so the pair
-   reads as from-here to-there rather than as two of the same thing. */
-.gdiagram .gnode[data-pin="1"] {
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: scale(1.6);
 }
 
 .gdiagram[data-hover="1"] .gedge {
