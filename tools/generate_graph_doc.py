@@ -12,10 +12,12 @@ The full figure at the bottom is the same routed drawing as the card's art,
 from pcb_layout.Layout, quarter-turned and with the spacing knobs set for
 reading rather than for the card's composition.
 
-The page is written to graph/index.html and carries no frontmatter: /graph
-resolves by the directory-index convention every static host already follows,
-so nothing here needs Jekyll and what `python3 -m http.server` serves is
-exactly what GitHub Pages serves.
+The page is written to graph.html and carries no frontmatter: GitHub Pages
+resolves an extensionless request straight to the .html file beside it, so
+/graph is served as itself rather than redirected to a directory. Nothing
+here needs Jekyll. python3 -m http.server does not do that resolution, so a
+local preview wants the filename where the live site wants /graph; graph/
+holds a stub that redirects, which covers the slash form either way.
 
 Each figure is also written to assets/ as a standalone .svg, the way
 generate_graph.py writes the rail. The page carries them inline so they paint
@@ -28,7 +30,7 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "graph" / "index.html"
+OUT = ROOT / "graph.html"
 ASSETS = ROOT / "assets"
 
 sys.path.insert(0, str(ROOT / "tools"))
@@ -850,7 +852,6 @@ def build_page():
 
 if __name__ == "__main__":
     html, figures = build_page()
-    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(html)
     print("wrote", OUT, f"({len(html)} bytes)")
     for name, svg in figures.items():
