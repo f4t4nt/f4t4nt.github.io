@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Builds a decorative, non-interactive circuit rendering of the real
-104-vertex/208-edge graph for use as og-card background art.
+"""Regenerates assets/og-art.svg, a decorative, non-interactive circuit
+rendering of the real 104-vertex/208-edge graph. generate_og_card.py draws it
+into the card; this module is also the drawing's own artifact.
 
 Everything sits on one lattice of pitch U. Every cable runs along a lattice
 line, so any two adjacent parallel cables anywhere in the drawing -- inside a
@@ -59,7 +60,10 @@ path is built from axis-aligned steps only (no diagonal segments anywhere).
 import pathlib
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+OUT = ROOT / "assets" / "og-art.svg"
+
+sys.path.insert(0, str(ROOT / "tools"))
 from generate_graph import f, is_conn, is_row_hub, parse_edges
 
 BLOCKS = ["0", "1", "2"]
@@ -493,4 +497,5 @@ def build_art():
 if __name__ == "__main__":
     markup = build_art()
     svg = f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">{markup}</svg>'
-    print(svg)
+    OUT.write_text(svg)
+    print("wrote", OUT, f"({len(svg)} bytes)")
