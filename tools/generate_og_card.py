@@ -112,6 +112,32 @@ HTML = """<!doctype html>
 """
 
 
+# the faces the card actually sets, as CSS font shorthand. Measuring type
+# before these have arrived silently measures a fallback instead.
+FACES = [
+    '700 58px "IBM Plex Sans"',
+    '400 28px "IBM Plex Sans"',
+    '500 24px "IBM Plex Mono"',
+    '400 19px "IBM Plex Mono"',
+]
+
+
+def _await_fonts(page):
+    """Block until the webfonts are in, and fail loudly if they never come.
+    Both the shrink-to-fit measurements and the screenshot depend on the real
+    metrics; a fallback face renders a card that looks almost right, so the
+    failure has to be raised rather than waited out."""
+    page.evaluate(
+        "faces => Promise.all(faces.map(f => document.fonts.load(f)))"
+        ".then(() => document.fonts.ready)",
+        FACES,
+    )
+    missing = page.evaluate(
+        "faces => faces.filter(f => !document.fonts.check(f))", FACES
+    )
+    assert not missing, f"webfonts unavailable: {missing}"
+
+
 def _shrink_to_fit(page, selector, size, min_size, max_width):
     box = page.eval_on_selector(selector, "el => el.getBoundingClientRect()")
     while box["width"] > max_width and size > min_size:
@@ -142,9 +168,11 @@ def render(headline_size=58, subtitle_size=28):
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
-        page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=2)
+        page = browser.new_page(
+            viewport={"width": W, "height": H}, device_scale_factor=2
+        )
         page.goto(f"file://{html_path}")
-        page.wait_for_timeout(150)
+        _await_fonts(page)
 
         # both lines must fit on one row each, clear of the art panel
         headline_size, headline_w = _shrink_to_fit(

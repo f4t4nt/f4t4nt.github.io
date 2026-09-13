@@ -11,6 +11,7 @@
     var edges = Array.prototype.slice.call(svg.querySelectorAll(".gedge"));
     var visibleNodes = Array.prototype.slice.call(svg.querySelectorAll(".gnode"));
     var hitNodes = Array.prototype.slice.call(svg.querySelectorAll(".ghit"));
+    var groupLabels = Array.prototype.slice.call(svg.querySelectorAll(".glabel"));
     if (!hitNodes.length) return;
 
     var pos = Object.create(null);
@@ -53,19 +54,38 @@
       adj[label] = Object.keys(adjSets[label]);
     });
 
-    function setNear(labelSet) {
-      visibleNodes.forEach(function (el) {
-        if (labelSet[el.getAttribute("data-v")]) el.setAttribute("data-near", "1");
-        else el.removeAttribute("data-near");
-      });
-    }
+    // The vertex pairs one .gedge element stands for. A spoke element names its
+    // pair outright; a data-ids trunk names none, so its pairs are whichever of
+    // the vertices it lists are actually adjacent.
+    elemInfo.forEach(function (info) {
+      var labelSet = Object.create(null);
+      var pairs = [];
+      function addPair(a, b) {
+        labelSet[a] = true;
+        labelSet[b] = true;
+        pairs.push([a, b]);
+      }
+      if (info.hub) info.far.forEach(function (far) { addPair(info.hub, far); });
+      if (info.u && info.w) addPair(info.u, info.w);
+      if (info.ids) {
+        var idsSet = Object.create(null);
+        info.ids.forEach(function (v) { idsSet[v] = true; });
+        Object.keys(idsSet).forEach(function (v) {
+          (adj[v] || []).forEach(function (n) {
+            if (idsSet[n]) addPair(v, n);
+          });
+        });
+      }
+      info.pairs = pairs;
+      info.labels = Object.keys(labelSet);
+    });
 
-    // the exact hovered vertex, as opposed to the wider "near" set (self +
-    // neighbors) -- lets CSS give the hovered node its own look
-    function setActive(labelSet) {
+    // data-near is the lit set (what is hovered, plus its neighbors); data-active
+    // is what is hovered exactly, so CSS can give it its own look
+    function setFlag(name, labelSet) {
       visibleNodes.forEach(function (el) {
-        if (labelSet[el.getAttribute("data-v")]) el.setAttribute("data-active", "1");
-        else el.removeAttribute("data-active");
+        if (labelSet[el.getAttribute("data-v")]) el.setAttribute(name, "1");
+        else el.removeAttribute(name);
       });
     }
 
@@ -79,8 +99,8 @@
       active[label] = true;
 
       svg.setAttribute("data-hover", "1");
-      setNear(near);
-      setActive(active);
+      setFlag("data-near", near);
+      setFlag("data-active", active);
 
       elemInfo.forEach(function (info) {
         var el = info.el;
@@ -101,6 +121,39 @@
       });
     }
 
+    // Hovering a silkscreen name hovers the whole set of vertices it stands for,
+    // which makes the edges divide in a way a single vertex never does: both ends
+    // inside the set is the set's own structure, one end outside is how it is
+    // attached to the rest. What each name stands for is the page's business --
+    // this only reads the list.
+    function highlightGroup(members) {
+      var inside = Object.create(null);
+      var near = Object.create(null);
+      members.forEach(function (v) {
+        inside[v] = true;
+        near[v] = true;
+        (adj[v] || []).forEach(function (n) { near[n] = true; });
+      });
+
+      svg.setAttribute("data-hover", "1");
+      setFlag("data-near", near);
+      setFlag("data-active", inside);
+
+      elemInfo.forEach(function (info) {
+        var ends = 0;
+        info.pairs.forEach(function (pair) {
+          var n = (inside[pair[0]] ? 1 : 0) + (inside[pair[1]] ? 1 : 0);
+          if (n > ends) ends = n;
+        });
+        var el = info.el;
+        if (ends === 2) el.setAttribute("data-ingroup", "1");
+        else el.removeAttribute("data-ingroup");
+        if (ends === 1) el.setAttribute("data-onpath", "1");
+        else el.removeAttribute("data-onpath");
+        el.removeAttribute("data-edgehover");
+      });
+    }
+
     function edgeConnects(info, a, b) {
       if (info.hub && ((info.hub === a && info.far.indexOf(b) !== -1) || (info.hub === b && info.far.indexOf(a) !== -1))) return true;
       if (info.ids && info.ids.indexOf(a) !== -1 && info.ids.indexOf(b) !== -1) return true;
@@ -115,7 +168,7 @@
       var near = Object.create(null);
       near[a] = true;
       near[b] = true;
-      setNear(near);
+      setFlag("data-near", near);
 
       elemInfo.forEach(function (info) {
         var el = info.el;
@@ -133,8 +186,10 @@
       });
       edges.forEach(function (el) {
         el.removeAttribute("data-onpath");
+        el.removeAttribute("data-ingroup");
         el.removeAttribute("data-edgehover");
       });
+      groupLabels.forEach(function (el) { el.removeAttribute("data-active"); });
     }
 
     hitNodes.forEach(function (hit) {
@@ -142,6 +197,16 @@
         highlight(hit.getAttribute("data-v"));
       });
       hit.addEventListener("pointerleave", clear);
+    });
+
+    groupLabels.forEach(function (el) {
+      var members = splitAttr(el, "data-group") || [];
+      if (!members.length) return;
+      el.addEventListener("pointerenter", function () {
+        highlightGroup(members);
+        el.setAttribute("data-active", "1");
+      });
+      el.addEventListener("pointerleave", clear);
     });
 
     // hit-test the drawn geometry itself, not proximity to a node -- bridges run long
@@ -171,34 +236,14 @@
       return ex * ex + ey * ey;
     }
 
-    // a data-ids trunk names no pair directly -- recover its pairs from adj
     var hitSegments = [];
     elemInfo.forEach(function (info) {
-      var labelSet = Object.create(null);
-      var pairs = [];
-      function addPair(a, b) {
-        labelSet[a] = true;
-        labelSet[b] = true;
-        pairs.push([a, b]);
-      }
-      if (info.hub) info.far.forEach(function (far) { addPair(info.hub, far); });
-      if (info.u && info.w) addPair(info.u, info.w);
-      if (info.ids) {
-        var idsSet = Object.create(null);
-        info.ids.forEach(function (v) { idsSet[v] = true; });
-        Object.keys(idsSet).forEach(function (v) {
-          (adj[v] || []).forEach(function (n) {
-            if (idsSet[n]) addPair(v, n);
-          });
-        });
-      }
-      if (!pairs.length) return;
-      var labels = Object.keys(labelSet);
+      if (!info.pairs.length) return;
       var pts = parsePoints(info.el);
       for (var i = 0; i + 1 < pts.length; i++) {
         hitSegments.push({
           x1: pts[i][0], y1: pts[i][1], x2: pts[i + 1][0], y2: pts[i + 1][1],
-          labels: labels, pairs: pairs,
+          labels: info.labels, pairs: info.pairs,
         });
       }
     });
@@ -250,7 +295,8 @@
     }
 
     svg.addEventListener("pointermove", function (evt) {
-      if (evt.target.classList && evt.target.classList.contains("ghit")) return;
+      var cl = evt.target.classList;
+      if (cl && (cl.contains("ghit") || cl.contains("glabel"))) return;
       var ctm = svg.getScreenCTM();
       if (!ctm) return;
       var pt = svg.createSVGPoint();
@@ -274,6 +320,7 @@
       pos: pos,
       hitSegments: hitSegments,
       highlight: highlight,
+      highlightGroup: highlightGroup,
       highlightEdge: highlightEdge,
       clear: clear,
       resolveEdgeAt: resolveEdgeAt,

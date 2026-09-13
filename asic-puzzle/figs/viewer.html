@@ -1,0 +1,57 @@
+<body style='margin:0;background:#fff;font-family:monospace'>
+<div id='lab' style='padding:8px 12px 2px;font-size:14px;white-space:pre'></div>
+<div id='ob' style='padding:0 12px 6px;font-size:14px;color:#666;white-space:pre'></div>
+<div style='padding:0 12px'><button id='play' style='width:40px'>&#9654;</button>
+<input id='sl' type='range' min='0' max='__MAXF__' value='0' style='width:75%;vertical-align:middle'></div>
+<canvas id='cv' width='__W2__' height='__H2__' style='width:__CW__px;height:__H__px;padding:8px 12px'></canvas>
+<script>
+function dec(b){var s=atob(b),a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+var xy=new Uint16Array(dec('__XY__').buffer),cnt=new Uint16Array(dec('__CNT__').buffer),
+    pnet=new Uint16Array(dec('__PNET__').buffer),sig=dec('__SIG__'),bits=dec('__BITS__'),
+    titles=__TITLES__,olines=__OLINES__,leg=__LEG__,ileg=__ILEG__,SN=__SNET__,
+    BPF=__BPF__,W=__W__,CW=__CW__,H=__H__,XO=__XO__,sx=W/65535,sy=H/65535;
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');ctx.scale(2,2);
+var bg=document.createElement('canvas');bg.width=cv.width;bg.height=cv.height;
+var bc=bg.getContext('2d');bc.scale(2,2);
+var pb=new Path2D(),netIds=[],netPath={};
+for(var p=0,v=0;p<cnt.length;v+=cnt[p],p++){
+  var isSig=sig[p>>3]>>(7-(p&7))&1,n=pnet[p];
+  var P=isSig?(netPath[n]||(netIds.push(n),netPath[n]=new Path2D())):pb;
+  P.moveTo(XO+xy[2*v]*sx,H-xy[2*v+1]*sy);
+  for(var k=1;k<cnt[p];k++)P.lineTo(XO+xy[2*(v+k)]*sx,H-xy[2*(v+k)+1]*sy);
+  P.closePath();}
+bc.fillStyle='#edeff1';bc.fill(pb);
+function draw(f){
+  ctx.clearRect(0,0,CW,H);ctx.drawImage(bg,0,0,CW,H);
+  var off=new Path2D(),on=new Path2D(),base=f*BPF;
+  for(var i=0;i<netIds.length;i++){var n=netIds[i];
+    ((bits[base+(n>>3)]>>(7-(n&7)))&1?on:off).addPath(netPath[n]);}
+  ctx.fillStyle='#59739b';ctx.fill(off);ctx.fillStyle='#ff9e0d';ctx.fill(on);
+  var sOn=(bits[base+(SN>>3)]>>(7-(SN&7)))&1;
+  if(netPath[SN]){ctx.lineWidth=1.2;ctx.strokeStyle=sOn?'#0b8043':'#e91e63';ctx.stroke(netPath[SN]);}
+  ctx.font='bold 11px monospace';
+  function lab1(L,tx,lx){
+    var b=(bits[base+(L[1]>>3)]>>(7-(L[1]&7)))&1,s=L[0]+'='+b,
+        c=L[0]=='success'?(b?'#0b8043':'#e91e63'):(b?'#e07b00':'#59739b');
+    if(lx<XO)lx=tx+ctx.measureText(s).width+4;
+    ctx.strokeStyle=c;ctx.lineWidth=1;ctx.globalAlpha=0.45;
+    ctx.beginPath();ctx.moveTo(lx,L[4]-4);ctx.lineTo(XO+L[2],L[3]);ctx.stroke();
+    ctx.globalAlpha=1;ctx.fillStyle=c;
+    ctx.beginPath();ctx.arc(XO+L[2],L[3],2.5,0,6.284);ctx.fill();
+    ctx.fillText(s,tx,L[4]);}
+  for(var i=0;i<leg.length;i++)lab1(leg[i],XO+W+20,XO+W+16);
+  for(var i=0;i<ileg.length;i++)lab1(ileg[i],4,XO-8);
+  document.getElementById('lab').textContent=titles[f];
+  document.getElementById('ob').textContent=olines[f];}
+var tm=null,hold=0,sl=document.getElementById('sl'),bt=document.getElementById('play');
+sl.oninput=function(){hold=0;draw(+sl.value);};
+bt.onclick=function(){
+  if(tm){clearInterval(tm);tm=null;hold=0;bt.innerHTML='&#9654;';return;}
+  if(+sl.value>=+sl.max){sl.value=0;draw(0);}
+  bt.innerHTML='&#9646;&#9646;';
+  tm=setInterval(function(){
+    if(hold){if(!--hold){sl.value=0;draw(0);}return;}
+    var f=+sl.value+1;sl.value=f;draw(f);
+    if(f>=+sl.max)hold=100;},100);};
+draw(0);
+</script>

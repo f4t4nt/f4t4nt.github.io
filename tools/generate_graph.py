@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """Regenerates assets/graph-rail.svg, a circuit-board drawing of the graph
-in n104-deg4-dia4.edges, for splicing into index.html's graph-rail block.
+in deg4-dia4-n104.edges, for splicing into index.html's graph-rail block.
 """
 
 import itertools
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA = ROOT / "tools" / "n104-deg4-dia4.edges"
+DATA = ROOT / "data" / "deg4-dia4-n104.edges"
 OUT = ROOT / "assets" / "graph-rail.svg"
+INDEX = ROOT / "index.html"
 
 W, H = 125, 1240
 
-BLOCKS = ["0", "1", "2"]
-GRID_CY = {"0": 150, "1": 590, "2": 1030}
+BLOCKS = ["A", "B", "C"]
+GRID_CY = {"A": 150, "B": 590, "C": 1030}
 ROW_DY = 15
 COL_DX = 15
 GRID_CX = 40
@@ -29,24 +31,16 @@ def f(x):
     return f"{x:.2f}"
 
 
-def decode_vertex(n):
-    """Inverse of the id scheme documented atop n104-deg4-dia4.edges."""
-    if n < 24:
-        block, off = str(n // 8), n % 8
-        return f"{block}.L{off + 1}" if off < 4 else f"{block}.R{off - 3}"
-    if n < 72:
-        block, off = str((n - 24) // 16), (n - 24) % 16
-        return f"{block}.P{off // 4 + 1}{off % 4 + 1}"
-    return f"C{n:03d}"
-
-
 def parse_edges():
+    """The 208 edges, in the order the record lists them. Vertices carry the
+    labels the record itself uses: A.L1, A.R1, A.P11 inside a block, X01a and
+    its partner X01b for a connector pair."""
     edges = []
     for line in DATA.read_text().splitlines():
         line = line.split("#")[0].strip()
         if not line:
             continue
-        u, v = (decode_vertex(int(n)) for n in line.split())
+        u, v = line.split()
         edges.append((u, v))
     assert len(edges) == 208, len(edges)
     deg = {}
@@ -59,7 +53,9 @@ def parse_edges():
 
 
 def is_conn(v):
-    return v[0] == "C"
+    """Connectors are X01a..X16b; every block vertex is qualified by its
+    block, so C.L1 is block C's first L branch, not a connector."""
+    return v[0] == "X"
 
 
 def block_positions(block):
@@ -126,9 +122,9 @@ def free_gaps():
 
 def connector_positions(edges):
     """Y positions along the corridor: connectors spread evenly through the
-    block gaps, ordered to match the file's matching-edge pairs (72 74, then
-    73 75, then 76 78, ...) so each matching edge is a short local hop and
-    the rail reads top to bottom in that same pairing order."""
+    block gaps, in the order the record's matching edges name them (X01a,
+    X01b, X02a, ...) so each matching edge is a short local hop and the rail
+    reads top to bottom in pair order."""
     labels = []
     seen = set()
     for u, v in edges:
@@ -351,7 +347,19 @@ def build_svg():
     return "\n".join(out)
 
 
+def splice_index(svg):
+    """index.html carries the rail inline rather than referencing the asset,
+    so it paints with the page. That copy has to be kept in step."""
+    html = INDEX.read_text()
+    spliced, n = re.subn(
+        r'<svg class="gdiagram".*?</svg>', lambda _: svg, html, count=1, flags=re.DOTALL
+    )
+    assert n == 1, "no rail block in index.html"
+    INDEX.write_text(spliced)
+
+
 if __name__ == "__main__":
     svg = build_svg()
     OUT.write_text(svg)
-    print("wrote", OUT, f"({len(svg)} bytes)")
+    splice_index(svg)
+    print("wrote", OUT, f"({len(svg)} bytes), spliced into", INDEX.name)

@@ -229,6 +229,39 @@ a:hover {
   border-bottom-color: var(--accent);
 }
 
+/* A filled ? beside a title: a second, quieter link, to a page about the entry
+   rather than to the entry itself. Sized in em so it tracks the text it sits
+   beside, and it carries a solid disc instead of the usual underline.
+
+   The glyph is cut out of the disc rather than drawn on top of it, so what
+   shows through the ? is whatever is behind the badge -- which is the point
+   here, since the row it sits in tints its own background on hover and a
+   paper-coloured ? would stay paper-coloured while the row moved. The mask is
+   a disc minus the glyph; the colour is an ordinary background, so the accent
+   on hover is a one-property change. It sits at the muted tone the secondary
+   text uses, so the title keeps the row and the badge is noticed second. The
+   element has no text of its own, and the link is named for assistive tech by
+   its aria-label. */
+.explain {
+  --disc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cmask id='m'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23fff'/%3E%3Ctext x='16' y='23.5' text-anchor='middle' font-family='ui-monospace, Menlo, monospace' font-size='23' font-weight='700' fill='%23000'%3E?%3C/text%3E%3C/mask%3E%3Crect width='32' height='32' fill='%23fff' mask='url(%23m)'/%3E%3C/svg%3E");
+  display: inline-block;
+  width: 0.88em;
+  height: 0.88em;
+  margin-left: 0.38em;
+  vertical-align: -0.08em;
+  border-bottom: none;
+  background: var(--muted);
+  -webkit-mask-image: var(--disc);
+  mask-image: var(--disc);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  transition: background-color 0.15s ease;
+}
+
+.explain:hover {
+  background: var(--accent);
+}
+
 /* ---- Footer / contact ----------------------------------------------- */
 
 .contact {
@@ -293,6 +326,9 @@ a:hover {
 
 /* ---- Graph rail ------------------------------------------------------ */
 
+/* The rail is decoration, not a way through: it wakes up when the graph's
+   line in the record is hovered, and the dim ? beside that line is the only
+   thing on the page that goes to /graph. */
 .graph-rail {
   display: none;
   position: absolute;
@@ -301,9 +337,6 @@ a:hover {
   width: 240px;
   height: 100vh;
   color: inherit;
-  text-decoration: none;
-  border-bottom: none;
-  cursor: default; /* TODO: pointer once /graph is live */
   --proximity: 0;
 }
 
@@ -322,9 +355,30 @@ a:hover {
   opacity: 1;
 }
 
+/* The hit targets are there to be hovered, not clicked: nothing in any of the
+   drawings goes anywhere, so they take no cursor of their own. */
 .gdiagram .ghit {
   fill: transparent;
-  cursor: default; /* TODO: pointer once /graph is live */
+}
+
+/* Labels inside a drawing are part of the drawing: dragging across a figure
+   should not pick out "L1 L2 L3" as if it were prose. */
+.gdiagram text {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* A name that stands for a set of vertices is hoverable across its whole line
+   of type rather than only where a glyph happens to be inked, so the gaps
+   between two characters do not drop the highlight. */
+.gdiagram .glabel {
+  pointer-events: all;
+  transition: fill 0.3s ease-out, fill-opacity 0.3s ease-out;
+}
+
+.gdiagram .glabel[data-active="1"] {
+  fill: var(--accent);
+  fill-opacity: 1;
 }
 
 .gdiagram .gnode,
@@ -386,9 +440,16 @@ g[stroke="currentColor"] > .gedge[data-onpath="1"] {
   stroke: var(--ink-lit);
 }
 
-.graph-rail:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
+/* Hovering a group name splits the lit edges in two: the ones inside the group
+   take the accent, like the group's own nodes, and the ones leaving it stay the
+   neutral lit tone, like the neighbors they land on. So the picture says which
+   edges are the group's structure and which are its attachments. */
+.gdiagram[data-hover="1"] .gedge[data-ingroup="1"] {
+  opacity: 1;
+}
+
+g[stroke="currentColor"] > .gedge[data-ingroup="1"] {
+  stroke: var(--accent);
 }
 
 @media (min-width: 1440px) {
@@ -407,5 +468,8 @@ g[stroke="currentColor"] > .gedge[data-onpath="1"] {
   .gdiagram .gnode,
   .gdiagram .gedge {
     transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out !important;
+  }
+  .gdiagram .glabel {
+    transition: fill 0.3s ease-out, fill-opacity 0.3s ease-out !important;
   }
 }
