@@ -355,10 +355,18 @@ a:hover {
   opacity: 1;
 }
 
-/* The hit targets are there to be hovered, not clicked: nothing in any of the
-   drawings goes anywhere, so they take no cursor of their own. */
+/* The hit targets are there to be hovered, so by default they take no cursor
+   of their own -- nothing in a drawing goes anywhere. */
 .gdiagram .ghit {
   fill: transparent;
+}
+
+/* Except where a drawing takes a click as well: there a vertex can be pinned
+   as a path source, and the pointer is the only thing that says so. Edges and
+   silkscreen names in the same drawing are not clickable and keep the default
+   cursor, which is what marks the vertices out. */
+.gdiagram[data-pick="1"] .ghit {
+  cursor: pointer;
 }
 
 /* Labels inside a drawing are part of the drawing: dragging across a figure
@@ -383,7 +391,8 @@ a:hover {
 
 .gdiagram .gnode,
 .gdiagram .gedge {
-  transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out;
+  transition: opacity 0.3s ease-out, fill 0.3s ease-out, stroke 0.3s ease-out,
+    transform 0.3s ease-out;
 }
 
 /* hovering a node lights up only it and its direct neighbors */
@@ -403,6 +412,15 @@ a:hover {
 
 .gdiagram .gnode[data-active="1"] {
   fill: var(--accent);
+}
+
+/* A pinned source is accent like any active vertex; what separates it from the
+   vertex currently under the pointer is that it stands larger, so the pair
+   reads as from-here to-there rather than as two of the same thing. */
+.gdiagram .gnode[data-pin="1"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1.6);
 }
 
 .gdiagram[data-hover="1"] .gedge {
@@ -438,6 +456,13 @@ a:hover {
    color, or they'd barely read against the dimmed rest */
 g[stroke="currentColor"] > .gedge[data-onpath="1"] {
   stroke: var(--ink-lit);
+}
+
+/* A traced path is the answer to something the reader asked by pinning, so it
+   takes the accent its two ends do rather than the neutral lit tone a plain
+   hover's spokes get. */
+.gdiagram[data-pinned="1"] .gedge[data-onpath="1"] {
+  stroke: var(--accent);
 }
 
 /* Hovering a group name splits the lit edges in two: the ones inside the group

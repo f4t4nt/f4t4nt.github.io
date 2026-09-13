@@ -80,6 +80,8 @@
       info.labels = Object.keys(labelSet);
     });
 
+    var NONE = Object.create(null);
+
     // data-near is the lit set (what is hovered, plus its neighbors); data-active
     // is what is hovered exactly, so CSS can give it its own look
     function setFlag(name, labelSet) {
@@ -101,6 +103,7 @@
       svg.setAttribute("data-hover", "1");
       setFlag("data-near", near);
       setFlag("data-active", active);
+      setFlag("data-pin", NONE);
 
       elemInfo.forEach(function (info) {
         var el = info.el;
@@ -138,6 +141,7 @@
       svg.setAttribute("data-hover", "1");
       setFlag("data-near", near);
       setFlag("data-active", inside);
+      setFlag("data-pin", NONE);
 
       elemInfo.forEach(function (info) {
         var ends = 0;
@@ -178,36 +182,139 @@
       });
     }
 
-    function clear() {
-      svg.removeAttribute("data-hover");
-      visibleNodes.forEach(function (el) {
-        el.removeAttribute("data-near");
-        el.removeAttribute("data-active");
-      });
+    function clearEdges() {
       edges.forEach(function (el) {
         el.removeAttribute("data-onpath");
         el.removeAttribute("data-ingroup");
         el.removeAttribute("data-edgehover");
       });
+    }
+
+    function clear() {
+      svg.removeAttribute("data-hover");
+      svg.removeAttribute("data-pinned");
+      visibleNodes.forEach(function (el) {
+        el.removeAttribute("data-near");
+        el.removeAttribute("data-active");
+        el.removeAttribute("data-pin");
+      });
+      clearEdges();
       groupLabels.forEach(function (el) { el.removeAttribute("data-active"); });
     }
 
-    hitNodes.forEach(function (hit) {
-      hit.addEventListener("pointerenter", function () {
-        highlight(hit.getAttribute("data-v"));
+    // A pinned source turns the diagram into one question -- how far is this
+    // from there -- so while one is held, only another vertex answers it:
+    // edges and silkscreen names stop responding until the pin is dropped.
+    var pinnable = svg.getAttribute("data-pick") === "1";
+    var pinned = null;
+
+    // Breadth-first, stopping the moment b is reached. Ties go to whichever
+    // neighbor the record named first, so the same pair always traces the
+    // same path.
+    function shortestPath(a, b) {
+      if (a === b) return [a];
+      var prev = Object.create(null);
+      var seen = Object.create(null);
+      var queue = [a];
+      seen[a] = true;
+      for (var i = 0; i < queue.length; i++) {
+        var ns = adj[queue[i]] || [];
+        for (var k = 0; k < ns.length; k++) {
+          var n = ns[k];
+          if (seen[n]) continue;
+          seen[n] = true;
+          prev[n] = queue[i];
+          if (n === b) {
+            var path = [b];
+            while (path[0] !== a) path.unshift(prev[path[0]]);
+            return path;
+          }
+          queue.push(n);
+        }
+      }
+      return null;
+    }
+
+    function highlightPath(a, b) {
+      var path = shortestPath(a, b);
+      if (!path) path = [a];
+
+      var near = Object.create(null);
+      path.forEach(function (v) { near[v] = true; });
+      var ends = Object.create(null);
+      ends[a] = true;
+      ends[path[path.length - 1]] = true;
+      var source = Object.create(null);
+      source[a] = true;
+
+      svg.setAttribute("data-hover", "1");
+      svg.setAttribute("data-pinned", "1");
+      setFlag("data-near", near);
+      setFlag("data-active", ends);
+      setFlag("data-pin", source);
+      groupLabels.forEach(function (el) { el.removeAttribute("data-active"); });
+
+      elemInfo.forEach(function (info) {
+        var on = false;
+        for (var i = 0; i + 1 < path.length && !on; i++) {
+          if (edgeConnects(info, path[i], path[i + 1])) on = true;
+        }
+        if (on) info.el.setAttribute("data-onpath", "1");
+        else info.el.removeAttribute("data-onpath");
+        info.el.removeAttribute("data-ingroup");
+        info.el.removeAttribute("data-edgehover");
       });
-      hit.addEventListener("pointerleave", clear);
+    }
+
+    // what the drawing shows with nothing under the pointer
+    function rest() {
+      if (pinned) highlightPath(pinned, pinned);
+      else clear();
+    }
+
+    function unpin() {
+      pinned = null;
+      clear();
+    }
+
+    hitNodes.forEach(function (hit) {
+      var label = hit.getAttribute("data-v");
+      hit.addEventListener("pointerenter", function () {
+        if (pinned) highlightPath(pinned, label);
+        else highlight(label);
+      });
+      hit.addEventListener("pointerleave", rest);
+      if (!pinnable) return;
+      hit.addEventListener("click", function (evt) {
+        evt.stopPropagation();
+        if (pinned === label) {
+          unpin();
+          highlight(label);
+        } else {
+          pinned = label;
+          highlightPath(label, label);
+        }
+      });
     });
 
     groupLabels.forEach(function (el) {
       var members = splitAttr(el, "data-group") || [];
       if (!members.length) return;
       el.addEventListener("pointerenter", function () {
+        if (pinned) return;
         highlightGroup(members);
         el.setAttribute("data-active", "1");
       });
-      el.addEventListener("pointerleave", clear);
+      el.addEventListener("pointerleave", rest);
     });
+
+    if (pinnable) {
+      // anywhere that is not a vertex drops the pin, as does Escape
+      svg.addEventListener("click", unpin);
+      document.addEventListener("keydown", function (evt) {
+        if (evt.key === "Escape" && pinned) unpin();
+      });
+    }
 
     // hit-test the drawn geometry itself, not proximity to a node -- bridges run long
     var EDGE_HOVER_TOLERANCE_SQ = 4.5 * 4.5;
@@ -295,6 +402,7 @@
     }
 
     svg.addEventListener("pointermove", function (evt) {
+      if (pinned) return;
       var cl = evt.target.classList;
       if (cl && (cl.contains("ghit") || cl.contains("glabel"))) return;
       var ctm = svg.getScreenCTM();
@@ -311,7 +419,7 @@
       }
       highlightEdge(pair.a, pair.b);
     });
-    svg.addEventListener("pointerleave", clear);
+    svg.addEventListener("pointerleave", rest);
 
     // exposed for tools/test_hover.py
     var handle = {
@@ -322,6 +430,10 @@
       highlight: highlight,
       highlightGroup: highlightGroup,
       highlightEdge: highlightEdge,
+      highlightPath: highlightPath,
+      shortestPath: shortestPath,
+      unpin: unpin,
+      pinnedLabel: function () { return pinned; },
       clear: clear,
       resolveEdgeAt: resolveEdgeAt,
     };

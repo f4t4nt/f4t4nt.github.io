@@ -468,7 +468,7 @@ def full_figure(L):
 
     out = []
     out.append(
-        f'<svg id="fullgraph" class="gdiagram"'
+        f'<svg id="fullgraph" class="gdiagram" data-pick="1"'
         f' viewBox="{f(-left)} {f(-head)} {f(L.W + left)}'
         f' {f(L.H + head + tail)}"'
         f' width="{f((L.W + left) * SCALE)}"'
@@ -478,7 +478,8 @@ def full_figure(L):
         f" circuit board: three blocks along the top, a routing channel"
         f" of 96 cables below them, the 32 connectors in a row, and the"
         f" 16 matching edges as staples at the bottom. Hover any vertex"
-        f' to highlight its four neighbors.">'
+        f" to highlight its four neighbors, or click one and hover a"
+        f' second to trace a shortest path between them.">'
     )
 
     out.append(
