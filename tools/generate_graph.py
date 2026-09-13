@@ -11,7 +11,6 @@ DATA = ROOT / "tools" / "n104-deg4-dia4.edges"
 OUT = ROOT / "assets" / "graph-rail.svg"
 
 W, H = 125, 1240
-BEND = 4.0  # one consistent elbow radius for every spur -> corridor junction
 
 BLOCKS = ["0", "1", "2"]
 GRID_CY = {"0": 150, "1": 590, "2": 1030}
@@ -23,7 +22,7 @@ GRID_CX = 40
 # through the vertical gaps between blocks (free_gaps()) so nothing collides
 CORRIDOR_X = 100
 BLOCK_MARGIN = 22
-CHIP_PAD = 13  # outline margin around the grid; stays inside BLOCK_MARGIN
+NODE_R = 2.6  # one radius for every node: hub, port, and connector alike
 
 
 def f(x):
@@ -38,7 +37,7 @@ def decode_vertex(n):
     if n < 72:
         block, off = str((n - 24) // 16), (n - 24) % 16
         return f"{block}.P{off // 4 + 1}{off % 4 + 1}"
-    return f"M{n:03d}"
+    return f"C{n:03d}"
 
 
 def parse_edges():
@@ -60,16 +59,18 @@ def parse_edges():
 
 
 def is_conn(v):
-    return v[0] == "M"
+    return v[0] == "C"
 
 
 def block_positions(block):
+    """Every coordinate in a block -- hubs and ports alike -- lands on the
+    same COL_DX/ROW_DY grid rooted at (GRID_CX, cy0)."""
     cy0 = GRID_CY[block]
     pos = {}
     for i in range(1, 5):
-        pos[f"{block}.L{i}"] = (GRID_CX - 16, cy0 + (i - 1) * ROW_DY)
+        pos[f"{block}.L{i}"] = (GRID_CX - COL_DX, cy0 + (i - 1) * ROW_DY)
     for j in range(1, 5):
-        pos[f"{block}.R{j}"] = (GRID_CX + (j - 1) * COL_DX, cy0 + 3 * ROW_DY + 16)
+        pos[f"{block}.R{j}"] = (GRID_CX + (j - 1) * COL_DX, cy0 + 4 * ROW_DY)
     for i in range(1, 5):
         for j in range(1, 5):
             pos[f"{block}.P{i}{j}"] = (
@@ -77,14 +78,6 @@ def block_positions(block):
                 cy0 + (i - 1) * ROW_DY,
             )
     return pos
-
-
-def chip_outline(block):
-    """Bounding box of a block's grid, padded into an IC-style package footprint."""
-    cy0 = GRID_CY[block]
-    x0, x1 = GRID_CX - 16 - CHIP_PAD, GRID_CX + 3 * COL_DX + 9
-    y0, y1 = cy0 - CHIP_PAD, cy0 + 3 * ROW_DY + 16 + CHIP_PAD
-    return x0, y0, x1, y1
 
 
 def block_edge_segments(edges, positions):
@@ -124,7 +117,7 @@ def free_gaps():
     prev_end = 20
     for b in BLOCKS:
         cy0 = GRID_CY[b]
-        y0, y1 = cy0 - BLOCK_MARGIN, cy0 + 3 * ROW_DY + 16 + BLOCK_MARGIN
+        y0, y1 = cy0 - BLOCK_MARGIN, cy0 + 4 * ROW_DY + BLOCK_MARGIN
         gaps.append([prev_end, y0])
         prev_end = y1
     gaps.append([prev_end, H - 20])
@@ -161,17 +154,12 @@ def connector_positions(edges):
         for k in range(c):
             y[next(it)] = s + (k + 0.5) * (e - s) / c
 
-    positions = {label: (CORRIDOR_X + CONNECTOR_DX, yy) for label, yy in y.items()}
-    order = sorted(positions, key=lambda label: positions[label][1])
-    return positions, order
+    return {label: (CORRIDOR_X + CONNECTOR_DX, yy) for label, yy in y.items()}
 
 
 def elbow_spur(x1, y1, corridor_x):
-    """Station -> corridor as an orthogonal run with one BEND-sized
-    45-degree chamfer, matching how real board routing turns a corner."""
-    direction = 1 if corridor_x > x1 else -1
-    elbow_x = corridor_x - direction * BEND
-    return f"M {f(x1)} {f(y1)} L {f(elbow_x)} {f(y1)} L {f(corridor_x)} {f(y1 + BEND)}"
+    """Station -> corridor: a plain straight run into the rail."""
+    return f"M {f(x1)} {f(y1)} L {f(corridor_x)} {f(y1)}"
 
 
 def is_row_hub(v):
@@ -184,8 +172,7 @@ def row_segments(row_block_edges, port_edges, positions, corridor_x):
     bug as block_edge_segments). Merges them into disjoint segments, each
     carrying whichever of hub/far/ids identities apply.
 
-    Returns (pieces, tails): pieces are (x1, y, x2, y, hub, far, ids)
-    straight runs; tails are (row_y, far) shared corridor-elbow curves.
+    Returns pieces: (x1, y, x2, y, hub, far, ids) straight runs.
     """
     hub_ports = {}
     for u, v in row_block_edges:
@@ -210,13 +197,11 @@ def row_segments(row_block_edges, port_edges, positions, corridor_x):
                 far.add(port)
         return sorted(far)
 
-    elbow_x = corridor_x - BEND
     pieces = []
-    tails = []
     for y, ports in by_row.items():
         ports.sort(key=lambda t: t[0])
         hub = hub_by_y.get(y)
-        boundary_xs = {x for x, _, _ in ports} | {elbow_x}
+        boundary_xs = {x for x, _, _ in ports} | {corridor_x}
         if hub is not None:
             boundary_xs.add(positions[hub][0])
         xs = sorted(boundary_xs)
@@ -233,8 +218,7 @@ def row_segments(row_block_edges, port_edges, positions, corridor_x):
             if not far:
                 far = None
             pieces.append((a, y, b, y, hub if far else None, far, ids))
-        tails.append((y, far_list([(port, conns) for _, port, conns in ports])))
-    return pieces, tails
+    return pieces
 
 
 def build_svg():
@@ -242,7 +226,7 @@ def build_svg():
     positions = {}
     for b in BLOCKS:
         positions.update(block_positions(b))
-    conn_pos, order = connector_positions(edges)
+    conn_pos = connector_positions(edges)
     positions.update(conn_pos)
 
     block_edges, match_edges, port_edges = [], [], []
@@ -262,9 +246,7 @@ def build_svg():
     col_block_edges = [
         (u, v) for u, v in block_edges if not is_row_hub(v if ".P" in u else u)
     ]
-    row_pieces, row_tails = row_segments(
-        row_block_edges, port_edges, positions, CORRIDOR_X
-    )
+    row_pieces = row_segments(row_block_edges, port_edges, positions, CORRIDOR_X)
 
     out = [
         f'<svg class="gdiagram" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
@@ -275,24 +257,12 @@ def build_svg():
         f'<rect class="grail-bg" x="0" y="0" width="{W}" height="{H}" fill="transparent"/>'
     )
 
-    # backbone bus: bright at rest (every signal runs through it), but still
-    # dims on hover like any other edge
+    # backbone bus: same currentColor as every other edge, just a touch
+    # brighter at rest since every signal runs through it
     out.append(
         f'<line class="grail-bus" x1="{CORRIDOR_X}" y1="20" x2="{CORRIDOR_X}" y2="{H - 20}" '
-        f'stroke="var(--ink-lit)" stroke-width="1.1" stroke-linecap="round" opacity="0.9"/>'
+        f'stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.9"/>'
     )
-
-    # faint package outline + pin-1 dot per block, so each grid reads as a component
-    out.append('<g stroke="currentColor" fill="none" stroke-width="0.9" opacity="0.3">')
-    for b in BLOCKS:
-        x0, y0, x1, y1 = chip_outline(b)
-        out.append(
-            f'<rect x="{f(x0)}" y="{f(y0)}" width="{f(x1 - x0)}" height="{f(y1 - y0)}" rx="3"/>'
-        )
-        out.append(
-            f'<circle cx="{f(x0 + 3.4)}" cy="{f(y0 + 3.4)}" r="1.3" fill="currentColor" stroke="none"/>'
-        )
-    out.append("</g>")
 
     def ids_attrs(far):
         return f'data-ids="{",".join(far)}"'
@@ -335,10 +305,6 @@ def build_svg():
         out.append(
             f'<line class="gedge" {ids_attrs(ids)} opacity="0.85" x1="{f(x1)}" y1="{f(y1)}" x2="{f(x2)}" y2="{f(y2)}"/>'
         )
-    for row_y, far in row_tails:
-        elbow_x = CORRIDOR_X - BEND
-        d = f"M {f(elbow_x)} {f(row_y)} L {f(CORRIDOR_X)} {f(row_y + BEND)}"
-        out.append(f'<path class="gedge" {ids_attrs(far)} opacity="0.85" d="{d}"/>')
     out.append("</g>")
 
     out.append('<g stroke="currentColor" fill="none" stroke-width="1.3">')
@@ -356,37 +322,21 @@ def build_svg():
         '<g stroke="currentColor" fill="none" stroke-width="1.1" stroke-linecap="round">'
     )
     for conn, port in port_edges:
-        cy = positions[conn][1] + BEND
-        py = positions[port][1] + BEND
+        cy = positions[conn][1]
+        py = positions[port][1]
         out.append(
             f'<line class="gedge" data-u="{conn}" data-w="{port}" data-rail="1" opacity="0" '
             f'x1="{CORRIDOR_X}" y1="{f(min(cy, py))}" x2="{CORRIDOR_X}" y2="{f(max(cy, py))}"/>'
         )
     out.append("</g>")
 
-    # hubs carry no port identity of their own, just a layer hop, so they read as small filled vias
+    # every vertex -- hub, port, or connector -- reads as one uniform filled square
     out.append('<g fill="currentColor" stroke="none">')
     for label, (x, y) in positions.items():
-        if not is_conn(label) and ".P" not in label:
-            out.append(
-                f'<circle class="gnode" data-v="{label}" cx="{f(x)}" cy="{f(y)}" r="1.6"/>'
-            )
-    out.append("</g>")
-
-    # every named pin reads as a square pad, the via/pad distinction from real board silkscreen
-    def pad(label, x, y, half, stroke_w):
-        return f'<rect class="gnode" data-v="{label}" x="{f(x - half)}" y="{f(y - half)}" width="{f(2 * half)}" height="{f(2 * half)}" rx="{f(half * 0.32)}" stroke-width="{stroke_w}"/>'
-
-    out.append('<g fill="var(--paper)" stroke="currentColor" stroke-width="1.1">')
-    for label, (x, y) in positions.items():
-        if not is_conn(label) and ".P" in label:
-            out.append(pad(label, x, y, 2.4, 1.1))
-    out.append("</g>")
-
-    out.append('<g fill="var(--paper)" stroke="currentColor" stroke-width="1.1">')
-    for label in order:
-        x, y = positions[label]
-        out.append(pad(label, x, y, 1.9, 1.1))
+        out.append(
+            f'<rect class="gnode" data-v="{label}" x="{f(x - NODE_R)}" y="{f(y - NODE_R)}" '
+            f'width="{f(2 * NODE_R)}" height="{f(2 * NODE_R)}"/>'
+        )
     out.append("</g>")
 
     # invisible, larger hit-targets layered on top so hover works without shrinking the drawn dots

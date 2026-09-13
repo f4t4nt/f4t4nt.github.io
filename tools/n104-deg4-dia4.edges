@@ -6,11 +6,11 @@
 #   block 1: L = 8..11,  R = 12..15, P = 40..55
 #   block 2: L = 16..19, R = 20..23, P = 56..71
 #
-# Vertices 72..103 are connectors, called M vertices.
+# Vertices 72..103 are connectors, called C vertices.
 #
 # Within a block, every P vertex lies between one L branch and one R branch.
-# It also has two M neighbors. Every M vertex connects to one P in each block
-# and to one other M vertex in the final matching section. This makes every
+# It also has two C neighbors. Every C vertex connects to one P in each block
+# and to one other C vertex in the final matching section. This makes every
 # vertex degree 4.
 #
 # The edge list is grouped as follows:
@@ -132,8 +132,8 @@
 23 67
 23 71
 # ============================================================================
-# CONNECTOR-TO-P EDGES, BLOCK 0
-# Each P(0,x,y) in 24..39 has exactly two M neighbors.
+# CONNECTOR-TO-PORT EDGES, BLOCK 0
+# Each P(0,x,y) in 24..39 has exactly two C neighbors.
 # ============================================================================
 24 72
 24 102
@@ -168,8 +168,8 @@
 39 83
 39 93
 # ============================================================================
-# CONNECTOR-TO-P EDGES, BLOCK 1
-# Each P(1,x,y) in 40..55 has exactly two M neighbors.
+# CONNECTOR-TO-PORT EDGES, BLOCK 1
+# Each P(1,x,y) in 40..55 has exactly two C neighbors.
 # ============================================================================
 40 72
 40 93
@@ -204,8 +204,8 @@
 55 82
 55 101
 # ============================================================================
-# CONNECTOR-TO-P EDGES, BLOCK 2
-# Each P(2,x,y) in 56..71 has exactly two M neighbors.
+# CONNECTOR-TO-PORT EDGES, BLOCK 2
+# Each P(2,x,y) in 56..71 has exactly two C neighbors.
 # ============================================================================
 56 72
 56 101

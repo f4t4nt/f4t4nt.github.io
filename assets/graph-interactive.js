@@ -49,50 +49,9 @@
       link(info.w, info.u);
     });
     var adj = Object.create(null);
-    var maxDeg = 0;
     Object.keys(adjSets).forEach(function (label) {
       adj[label] = Object.keys(adjSets[label]);
-      maxDeg = Math.max(maxDeg, adj[label].length);
     });
-
-    var MARKER_SIZE = 9.5;
-    var NEIGHBOR_SIZE = 9;
-    function placeSquare(el, cx, cy, size) {
-      el.setAttribute("x", parseFloat(cx) - size / 2);
-      el.setAttribute("y", parseFloat(cy) - size / 2);
-    }
-
-    var marker = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    marker.setAttribute("class", "hover-marker");
-    marker.setAttribute("width", MARKER_SIZE);
-    marker.setAttribute("height", MARKER_SIZE);
-    marker.setAttribute("rx", "2.2");
-    svg.appendChild(marker);
-
-    // sized to this diagram's own max degree, not the full graph's
-    var neighborMarkers = [];
-    for (var i = 0; i < maxDeg; i++) {
-      var nm = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      nm.setAttribute("class", "hover-marker hover-marker-neighbor");
-      nm.setAttribute("width", NEIGHBOR_SIZE);
-      nm.setAttribute("height", NEIGHBOR_SIZE);
-      nm.setAttribute("rx", "1.8");
-      svg.appendChild(nm);
-      neighborMarkers.push(nm);
-    }
-
-    function placeNeighborMarkers(labels) {
-      neighborMarkers.forEach(function (nm, idx) {
-        var v = labels[idx];
-        var p = v && pos[v];
-        if (p) {
-          placeSquare(nm, p.cx, p.cy, NEIGHBOR_SIZE);
-          nm.removeAttribute("data-hidden");
-        } else {
-          nm.setAttribute("data-hidden", "1");
-        }
-      });
-    }
 
     function setNear(labelSet) {
       visibleNodes.forEach(function (el) {
@@ -101,17 +60,27 @@
       });
     }
 
-    function highlight(label, cx, cy) {
+    // the exact hovered vertex, as opposed to the wider "near" set (self +
+    // neighbors) -- lets CSS give the hovered node its own look
+    function setActive(labelSet) {
+      visibleNodes.forEach(function (el) {
+        if (labelSet[el.getAttribute("data-v")]) el.setAttribute("data-active", "1");
+        else el.removeAttribute("data-active");
+      });
+    }
+
+    function highlight(label) {
       var near = Object.create(null);
       near[label] = true;
       var neighbors = adj[label] || [];
       neighbors.forEach(function (v) { near[v] = true; });
 
+      var active = Object.create(null);
+      active[label] = true;
+
       svg.setAttribute("data-hover", "1");
-      marker.removeAttribute("data-hidden");
-      placeSquare(marker, cx, cy, MARKER_SIZE);
-      placeNeighborMarkers(neighbors);
       setNear(near);
+      setActive(active);
 
       elemInfo.forEach(function (info) {
         var el = info.el;
@@ -143,12 +112,10 @@
 
     function highlightEdge(a, b) {
       svg.setAttribute("data-hover", "1");
-      marker.setAttribute("data-hidden", "1");
       var near = Object.create(null);
       near[a] = true;
       near[b] = true;
       setNear(near);
-      placeNeighborMarkers([a, b]);
 
       elemInfo.forEach(function (info) {
         var el = info.el;
@@ -162,6 +129,7 @@
       svg.removeAttribute("data-hover");
       visibleNodes.forEach(function (el) {
         el.removeAttribute("data-near");
+        el.removeAttribute("data-active");
       });
       edges.forEach(function (el) {
         el.removeAttribute("data-onpath");
@@ -171,7 +139,7 @@
 
     hitNodes.forEach(function (hit) {
       hit.addEventListener("pointerenter", function () {
-        highlight(hit.getAttribute("data-v"), hit.getAttribute("cx"), hit.getAttribute("cy"));
+        highlight(hit.getAttribute("data-v"));
       });
       hit.addEventListener("pointerleave", clear);
     });

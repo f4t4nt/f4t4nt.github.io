@@ -49,7 +49,7 @@ def known_unreachable_edges(edges):
     positions = {}
     for b in BLOCKS:
         positions.update(block_positions(b))
-    conn_pos, _order = connector_positions(edges)
+    conn_pos = connector_positions(edges)
     positions.update(conn_pos)
 
     port_edges = []
@@ -359,7 +359,7 @@ async def test_clear_state(page):
         """() => {
             const svg = document.querySelector('svg.gdiagram');
             const h = svg.__ghDiagram;
-            h.highlight('M072', 0, 0);
+            h.highlight('C072', 0, 0);
             h.clear();
             const bad = [];
             if (svg.hasAttribute('data-hover')) bad.push('svg still has data-hover');
