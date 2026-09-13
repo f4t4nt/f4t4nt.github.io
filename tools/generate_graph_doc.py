@@ -16,8 +16,15 @@ The page is written to graph.html and carries no frontmatter: GitHub Pages
 resolves an extensionless request straight to the .html file beside it, so
 /graph is served as itself rather than redirected to a directory. Nothing
 here needs Jekyll. python3 -m http.server does not do that resolution, so a
-local preview wants the filename where the live site wants /graph; graph/
-holds a stub that redirects, which covers the slash form either way.
+local preview wants the filename where the live site wants /graph.
+
+The same bytes go to graph/index.html so the slash form serves the page
+too. A redirect there would be smaller, but Pages hands out a cacheable
+301 from /graph to /graph/ whenever the directory is the only thing that
+answers, and a browser still holding that 301 would bounce against a
+redirect pointing back the other way until it gave up. Two copies cannot
+loop. The canonical link in the head is absolute, so both say /graph, and
+git stores identical content once.
 
 Each figure is also written to assets/ as a standalone .svg, the way
 generate_graph.py writes the rail. The page carries them inline so they paint
@@ -31,6 +38,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "graph.html"
+OUT_SLASH = ROOT / "graph" / "index.html"
 ASSETS = ROOT / "assets"
 
 sys.path.insert(0, str(ROOT / "tools"))
@@ -852,8 +860,10 @@ def build_page():
 
 if __name__ == "__main__":
     html, figures = build_page()
-    OUT.write_text(html)
-    print("wrote", OUT, f"({len(html)} bytes)")
+    for path in (OUT, OUT_SLASH):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(html)
+        print("wrote", path, f"({len(html)} bytes)")
     for name, svg in figures.items():
         path = ASSETS / f"{name}.svg"
         path.write_text(svg)
