@@ -8,7 +8,7 @@ import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA = ROOT / "data" / "deg4-dia4-n104.edges"
+DATA = ROOT / "graph" / "deg4-dia4-n104.edges"
 OUT = ROOT / "assets" / "graph-rail.svg"
 INDEX = ROOT / "index.html"
 
