@@ -2,7 +2,7 @@
 """Regenerates the /graph page.
 
 Everything on the page -- the prose's counts, the port table, all three
-figures -- is derived from graph/deg4-dia4-n104.edges at build time, so the
+figures -- is derived from graph/deg4-dia4-n104.edges.txt at build time, so the
 page cannot drift from the record. The claims it makes about the graph
 (4-regular, diameter 4, one port per block per connector) are recomputed and
 asserted here rather than written down, which is why editing the record is
@@ -570,7 +570,7 @@ def full_figure(L):
 
 # --- the port table --------------------------------------------------------
 
-RECORD = "https://f4t4nt.github.io/graph/deg4-dia4-n104.edges"
+RECORD = "https://f4t4nt.github.io/graph/deg4-dia4-n104.edges.txt"
 
 
 def port_table(ports):

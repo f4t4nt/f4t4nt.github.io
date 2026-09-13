@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Regenerates assets/graph-rail.svg, a circuit-board drawing of the graph
-in deg4-dia4-n104.edges, for splicing into index.html's graph-rail block.
+in deg4-dia4-n104.edges.txt, for splicing into index.html's graph-rail block.
 """
 
 import itertools
@@ -8,7 +8,7 @@ import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DATA = ROOT / "graph" / "deg4-dia4-n104.edges"
+DATA = ROOT / "graph" / "deg4-dia4-n104.edges.txt"
 OUT = ROOT / "assets" / "graph-rail.svg"
 INDEX = ROOT / "index.html"
 
