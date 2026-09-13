@@ -15,7 +15,9 @@ INDEX = ROOT / "index.html"
 W, H = 125, 1240
 
 BLOCKS = ["A", "B", "C"]
-GRID_CY = {"A": 150, "B": 590, "C": 1030}
+# the top row of the 4x4 port grid; the R row sits one row above that, so a
+# block's ink starts at GRID_CY - ROW_DY
+GRID_CY = {"A": 165, "B": 605, "C": 1045}
 ROW_DY = 15
 COL_DX = 15
 GRID_CX = 40
@@ -60,13 +62,15 @@ def is_conn(v):
 
 def block_positions(block):
     """Every coordinate in a block -- hubs and ports alike -- lands on the
-    same COL_DX/ROW_DY grid rooted at (GRID_CX, cy0)."""
+    same COL_DX/ROW_DY grid rooted at (GRID_CX, cy0). L runs down the column
+    left of the grid, R across the row above it, and each hub's four spokes
+    run straight along the row or column its ports share."""
     cy0 = GRID_CY[block]
     pos = {}
     for i in range(1, 5):
         pos[f"{block}.L{i}"] = (GRID_CX - COL_DX, cy0 + (i - 1) * ROW_DY)
     for j in range(1, 5):
-        pos[f"{block}.R{j}"] = (GRID_CX + (j - 1) * COL_DX, cy0 + 4 * ROW_DY)
+        pos[f"{block}.R{j}"] = (GRID_CX + (j - 1) * COL_DX, cy0 - ROW_DY)
     for i in range(1, 5):
         for j in range(1, 5):
             pos[f"{block}.P{i}{j}"] = (
@@ -106,14 +110,21 @@ def block_edge_segments(edges, positions):
 CONNECTOR_DX = -(CORRIDOR_X - (GRID_CX + 3 * COL_DX))
 
 
+def block_span(block):
+    """A block's topmost and bottommost ink: the R row, then the four port
+    rows the L column runs beside."""
+    cy0 = GRID_CY[block]
+    return cy0 - ROW_DY, cy0 + 3 * ROW_DY
+
+
 def free_gaps():
     """Vertical bands with no grid block, top to bottom -- connectors are
     threaded through these so they never collide with a block."""
     gaps = []
     prev_end = 20
     for b in BLOCKS:
-        cy0 = GRID_CY[b]
-        y0, y1 = cy0 - BLOCK_MARGIN, cy0 + 4 * ROW_DY + BLOCK_MARGIN
+        top, bottom = block_span(b)
+        y0, y1 = top - BLOCK_MARGIN, bottom + BLOCK_MARGIN
         gaps.append([prev_end, y0])
         prev_end = y1
     gaps.append([prev_end, H - 20])
