@@ -118,7 +118,7 @@ async def hover(page, v):
 async def test_pin_cycle(page, dist):
     """Click pins, hover traces, clicking the same vertex lets go."""
     failures = []
-    a, b, c = "A.L1", "C.R4", "B.P23"
+    a, b, c = "A.L0", "C.R3", "B.P12"
 
     await click(page, a)
     st = await flags(page)
@@ -157,13 +157,13 @@ async def test_pin_cycle(page, dist):
 async def test_pin_suppresses(page):
     """While a vertex is held, edges and silkscreen names stay quiet."""
     failures = []
-    await click(page, "A.L1")
+    await click(page, "A.L0")
 
     label = page.locator(f"{BOARD} .glabel").first
     if await label.count():
         await label.hover(force=True)
         st = await flags(page)
-        if st["ingroup"] or st["pin"] != ["A.L1"]:
+        if st["ingroup"] or st["pin"] != ["A.L0"]:
             failures.append(f"group name answered while pinned: {st}")
 
     # park the pointer over a cable rather than a pad
@@ -172,7 +172,7 @@ async def test_pin_suppresses(page):
     st = await flags(page)
     if st["edgehover"]:
         failures.append(f"edge answered while pinned: {st}")
-    if st["pin"] != ["A.L1"]:
+    if st["pin"] != ["A.L0"]:
         failures.append(f"pin lost to a pointermove: {st}")
 
     await page.keyboard.press("Escape")

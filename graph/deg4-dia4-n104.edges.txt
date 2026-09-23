@@ -7,12 +7,12 @@
 # K_4,4: four L branches, four R branches, and a port Pxy subdividing the
 # edge between Lx and Ry.
 #
-#   block A: A.L1..A.L4, A.R1..A.R4, A.P11..A.P44
-#   block B: B.L1..B.L4, B.R1..B.R4, B.P11..B.P44
-#   block C: C.L1..C.L4, C.R1..C.R4, C.P11..C.P44
+#   block A: A.L0..A.L3, A.R0..A.R3, A.P00..A.P33
+#   block B: B.L0..B.L3, B.R0..B.R3, B.P00..B.P33
+#   block C: C.L0..C.L3, C.R0..C.R3, C.P00..C.P33
 #
-# The other 32 vertices are connectors, in 16 matched pairs: X01a/X01b
-# through X16a/X16b. A connector runs one edge to its partner and one into
+# The other 32 vertices are connectors, in 16 matched pairs: X00a/X00b
+# through X15a/X15b. A connector runs one edge to its partner and one into
 # each block, so it too has degree 4; a port is subdividing an L-R edge and
 # takes two connectors, so it does too.
 #
@@ -23,266 +23,267 @@
 
 # ============================================================================
 # BLOCK A INTERNAL EDGES
-# Vertices: A.L1..A.L4, A.R1..A.R4, A.P11..A.P44
+# Vertices: A.L0..A.L3, A.R0..A.R3, A.P00..A.P33
 # ============================================================================
 # L-P edges: A.Pxy -- A.Lx
+A.L0 A.P00
+A.L0 A.P01
+A.L0 A.P02
+A.L0 A.P03
+
+A.L1 A.P10
 A.L1 A.P11
 A.L1 A.P12
 A.L1 A.P13
-A.L1 A.P14
 
+A.L2 A.P20
 A.L2 A.P21
 A.L2 A.P22
 A.L2 A.P23
-A.L2 A.P24
 
+A.L3 A.P30
 A.L3 A.P31
 A.L3 A.P32
 A.L3 A.P33
-A.L3 A.P34
-
-A.L4 A.P41
-A.L4 A.P42
-A.L4 A.P43
-A.L4 A.P44
 
 # R-P edges: A.Pxy -- A.Ry
+A.R0 A.P00
+A.R0 A.P10
+A.R0 A.P20
+A.R0 A.P30
+
+A.R1 A.P01
 A.R1 A.P11
 A.R1 A.P21
 A.R1 A.P31
-A.R1 A.P41
 
+A.R2 A.P02
 A.R2 A.P12
 A.R2 A.P22
 A.R2 A.P32
-A.R2 A.P42
 
+A.R3 A.P03
 A.R3 A.P13
 A.R3 A.P23
 A.R3 A.P33
-A.R3 A.P43
-
-A.R4 A.P14
-A.R4 A.P24
-A.R4 A.P34
-A.R4 A.P44
 
 # ============================================================================
 # BLOCK B INTERNAL EDGES
-# Vertices: B.L1..B.L4, B.R1..B.R4, B.P11..B.P44
+# Vertices: B.L0..B.L3, B.R0..B.R3, B.P00..B.P33
 # ============================================================================
 # L-P edges: B.Pxy -- B.Lx
+B.L0 B.P00
+B.L0 B.P01
+B.L0 B.P02
+B.L0 B.P03
+
+B.L1 B.P10
 B.L1 B.P11
 B.L1 B.P12
 B.L1 B.P13
-B.L1 B.P14
 
+B.L2 B.P20
 B.L2 B.P21
 B.L2 B.P22
 B.L2 B.P23
-B.L2 B.P24
 
+B.L3 B.P30
 B.L3 B.P31
 B.L3 B.P32
 B.L3 B.P33
-B.L3 B.P34
-
-B.L4 B.P41
-B.L4 B.P42
-B.L4 B.P43
-B.L4 B.P44
 
 # R-P edges: B.Pxy -- B.Ry
+B.R0 B.P00
+B.R0 B.P10
+B.R0 B.P20
+B.R0 B.P30
+
+B.R1 B.P01
 B.R1 B.P11
 B.R1 B.P21
 B.R1 B.P31
-B.R1 B.P41
 
+B.R2 B.P02
 B.R2 B.P12
 B.R2 B.P22
 B.R2 B.P32
-B.R2 B.P42
 
+B.R3 B.P03
 B.R3 B.P13
 B.R3 B.P23
 B.R3 B.P33
-B.R3 B.P43
-
-B.R4 B.P14
-B.R4 B.P24
-B.R4 B.P34
-B.R4 B.P44
 
 # ============================================================================
 # BLOCK C INTERNAL EDGES
-# Vertices: C.L1..C.L4, C.R1..C.R4, C.P11..C.P44
+# Vertices: C.L0..C.L3, C.R0..C.R3, C.P00..C.P33
 # ============================================================================
 # L-P edges: C.Pxy -- C.Lx
+C.L0 C.P00
+C.L0 C.P01
+C.L0 C.P02
+C.L0 C.P03
+
+C.L1 C.P10
 C.L1 C.P11
 C.L1 C.P12
 C.L1 C.P13
-C.L1 C.P14
 
+C.L2 C.P20
 C.L2 C.P21
 C.L2 C.P22
 C.L2 C.P23
-C.L2 C.P24
 
+C.L3 C.P30
 C.L3 C.P31
 C.L3 C.P32
 C.L3 C.P33
-C.L3 C.P34
-
-C.L4 C.P41
-C.L4 C.P42
-C.L4 C.P43
-C.L4 C.P44
 
 # R-P edges: C.Pxy -- C.Ry
+C.R0 C.P00
+C.R0 C.P10
+C.R0 C.P20
+C.R0 C.P30
+
+C.R1 C.P01
 C.R1 C.P11
 C.R1 C.P21
 C.R1 C.P31
-C.R1 C.P41
 
+C.R2 C.P02
 C.R2 C.P12
 C.R2 C.P22
 C.R2 C.P32
-C.R2 C.P42
 
+C.R3 C.P03
 C.R3 C.P13
 C.R3 C.P23
 C.R3 C.P33
-C.R3 C.P43
-
-C.R4 C.P14
-C.R4 C.P24
-C.R4 C.P34
-C.R4 C.P44
 
 # ============================================================================
 # CONNECTOR-TO-PORT EDGES, BLOCK A
 # Each of block A's 16 ports takes exactly two connectors.
 # ============================================================================
-A.P11 X01a
-A.P11 X15b
-A.P12 X05a
-A.P12 X11b
-A.P13 X07b
-A.P13 X09a
-A.P14 X03b
-A.P14 X13a
+A.P00 X00a
+A.P00 X14b
+A.P01 X04a
+A.P01 X10b
+A.P02 X06b
+A.P02 X08a
+A.P03 X02b
+A.P03 X12a
 
-A.P21 X05b
-A.P21 X11a
-A.P22 X01b
-A.P22 X15a
-A.P23 X03a
-A.P23 X13b
-A.P24 X07a
-A.P24 X09b
+A.P10 X04b
+A.P10 X10a
+A.P11 X00b
+A.P11 X14a
+A.P12 X02a
+A.P12 X12b
+A.P13 X06a
+A.P13 X08b
 
-A.P31 X04b
-A.P31 X14a
-A.P32 X08b
-A.P32 X10a
-A.P33 X06a
-A.P33 X12b
-A.P34 X02a
-A.P34 X16b
+A.P20 X03b
+A.P20 X13a
+A.P21 X07b
+A.P21 X09a
+A.P22 X05a
+A.P22 X11b
+A.P23 X01a
+A.P23 X15b
 
-A.P41 X08a
-A.P41 X10b
-A.P42 X04a
-A.P42 X14b
-A.P43 X02b
-A.P43 X16a
-A.P44 X06b
-A.P44 X12a
+A.P30 X07a
+A.P30 X09b
+A.P31 X03a
+A.P31 X13b
+A.P32 X01b
+A.P32 X15a
+A.P33 X05b
+A.P33 X11a
 
 # ============================================================================
 # CONNECTOR-TO-PORT EDGES, BLOCK B
 # Each of block B's 16 ports takes exactly two connectors.
 # ============================================================================
-B.P11 X01a
-B.P11 X12a
-B.P12 X02a
-B.P12 X11a
-B.P13 X04a
-B.P13 X09a
-B.P14 X03a
-B.P14 X10a
+B.P00 X00a
+B.P00 X11a
+B.P01 X01a
+B.P01 X10a
+B.P02 X03a
+B.P02 X08a
+B.P03 X02a
+B.P03 X09a
 
-B.P21 X02b
-B.P21 X11b
-B.P22 X01b
-B.P22 X12b
-B.P23 X03b
-B.P23 X10b
-B.P24 X04b
-B.P24 X09b
+B.P10 X01b
+B.P10 X10b
+B.P11 X00b
+B.P11 X11b
+B.P12 X02b
+B.P12 X09b
+B.P13 X03b
+B.P13 X08b
 
-B.P31 X07a
-B.P31 X14b
-B.P32 X08a
-B.P32 X13b
-B.P33 X05a
-B.P33 X16b
-B.P34 X06a
-B.P34 X15b
+B.P20 X06a
+B.P20 X13b
+B.P21 X07a
+B.P21 X12b
+B.P22 X04a
+B.P22 X15b
+B.P23 X05a
+B.P23 X14b
 
-B.P41 X08b
-B.P41 X13a
-B.P42 X07b
-B.P42 X14a
-B.P43 X06b
-B.P43 X15a
-B.P44 X05b
-B.P44 X16a
+B.P30 X07b
+B.P30 X12a
+B.P31 X06b
+B.P31 X13a
+B.P32 X05b
+B.P32 X14a
+B.P33 X04b
+B.P33 X15a
 
 # ============================================================================
 # CONNECTOR-TO-PORT EDGES, BLOCK C
 # Each of block C's 16 ports takes exactly two connectors.
 # ============================================================================
-C.P11 X01a
-C.P11 X16a
-C.P12 X03b
-C.P12 X14b
-C.P13 X08b
-C.P13 X09b
-C.P14 X06a
-C.P14 X11a
+C.P00 X00a
+C.P00 X15a
+C.P01 X02b
+C.P01 X13b
+C.P02 X07b
+C.P02 X08b
+C.P03 X05a
+C.P03 X10a
 
-C.P21 X06b
-C.P21 X11b
-C.P22 X08a
-C.P22 X09a
-C.P23 X03a
-C.P23 X14a
-C.P24 X01b
-C.P24 X16b
+C.P10 X05b
+C.P10 X10b
+C.P11 X07a
+C.P11 X08a
+C.P12 X02a
+C.P12 X13a
+C.P13 X00b
+C.P13 X15b
 
+C.P20 X03b
+C.P20 X12b
+C.P21 X01a
+C.P21 X14a
+C.P22 X04a
+C.P22 X11a
+C.P23 X06b
+C.P23 X09b
+
+C.P30 X06a
+C.P30 X09a
 C.P31 X04b
-C.P31 X13b
-C.P32 X02a
-C.P32 X15a
-C.P33 X05a
+C.P31 X11b
+C.P32 X01b
+C.P32 X14b
+C.P33 X03a
 C.P33 X12a
-C.P34 X07b
-C.P34 X10b
-
-C.P41 X07a
-C.P41 X10a
-C.P42 X05b
-C.P42 X12b
-C.P43 X02b
-C.P43 X15b
-C.P44 X04a
-C.P44 X13a
 
 # ============================================================================
 # CONNECTOR MATCHING EDGES
-# Each pair shares its number: X01a--X01b, and so on.
+# Each pair shares its number: X00a--X00b, and so on.
 # ============================================================================
+X00a X00b
 X01a X01b
 X02a X02b
 X03a X03b
@@ -298,4 +299,3 @@ X12a X12b
 X13a X13b
 X14a X14b
 X15a X15b
-X16a X16b

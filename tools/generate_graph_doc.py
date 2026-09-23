@@ -153,9 +153,9 @@ def hub_group(block, side, i):
     """An L or R name's set: the hub and the four ports on its line, which are
     exactly the vertices the hub's original K4,4 edges touch."""
     ports = (
-        [f"{block}.P{i}{j}" for j in range(1, 5)]
+        [f"{block}.P{i}{j}" for j in range(4)]
         if side == "L"
-        else [f"{block}.P{j}{i}" for j in range(1, 5)]
+        else [f"{block}.P{j}{i}" for j in range(4)]
     )
     return [f"{block}.{side}{i}"] + ports
 
@@ -261,14 +261,14 @@ def block_figure(L):
     # the same two placements the board uses: an L name sits on its own column
     # above the hub, so it is set by its baseline rather than centred like every
     # other label; an R name is centred beside its hub, out to the left
-    for i in range(1, 5):
+    for i in range(4):
         x, y = pos[f"{pre}L{i}"]
         out.append(
             f'<text{named(hub_group(BF_BLOCK, "L", i))} x="{f(x)}"'
             f' y="{f(y - BF_GAP)}"'
             f' font-size="{f(TYPE)}" text-anchor="middle">L{i}</text>'
         )
-    for j in range(1, 5):
+    for j in range(4):
         x, y = pos[f"{pre}R{j}"]
         out.append(
             silk(
@@ -452,7 +452,7 @@ def full_figure(L):
     # an edge. Paying for it here rather than by widening the frame keeps the
     # frame meaning what it says -- air on all four sides -- instead of being
     # set by one row of type.
-    l_row = min(L.pt(*L.positions[f"{b}.L1"])[1] for b in BLOCKS)
+    l_row = min(L.pt(*L.positions[f"{b}.L0"])[1] for b in BLOCKS)
     head = max(0.0, LETTER_UP + 0.72 * LETTER_SIZE + AIR - l_row)
     pair_y = staple_bottom(L) + 1.2 * TYPE
     tail = max(0.0, pair_y + AIR - L.H)
@@ -460,7 +460,7 @@ def full_figure(L):
     # stands at the frame, so they are the one piece of silkscreen that runs
     # into the page's own edge.
     r_ink = (
-        min(L.pt(*L.positions[f"{b}.R{j}"])[0] for b in BLOCKS for j in range(1, 5))
+        min(L.pt(*L.positions[f"{b}.R{j}"])[0] for b in BLOCKS for j in range(4))
         - R_GAP
         - 2 * EM * TYPE
     )
@@ -520,7 +520,7 @@ def full_figure(L):
         # its left, so the letter goes above the block, clear of the L labels
         block = [v for v in L.positions if v.startswith(f"{b}.")]
         xs = [L.pt(*L.positions[v])[0] for v in block]
-        top = L.pt(*L.positions[f"{b}.L1"])[1]
+        top = L.pt(*L.positions[f"{b}.L0"])[1]
         out.append(
             f'<text{named(block)} x="{f((min(xs) + max(xs)) / 2)}"'
             f' y="{f(top - LETTER_UP)}"'
@@ -528,7 +528,7 @@ def full_figure(L):
             f' font-weight="600" fill-opacity="0.8"'
             f' text-anchor="middle">{b}</text>'
         )
-        for i in range(1, 5):
+        for i in range(4):
             x, y = L.pt(*L.positions[f"{b}.L{i}"])
             out.append(
                 f'<text{named(hub_group(b, "L", i))} x="{f(x)}"'
@@ -536,7 +536,7 @@ def full_figure(L):
                 f' font-size="{f(TYPE)}"'
                 f' text-anchor="middle">L{i}</text>'
             )
-        for j in range(1, 5):
+        for j in range(4):
             x, y = L.pt(*L.positions[f"{b}.R{j}"])
             out.append(
                 silk(x - R_GAP, y, f"R{j}", anchor="end", members=hub_group(b, "R", j))
@@ -616,8 +616,8 @@ PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Largest known (4,4)-graph &mdash; Nishant Bhakar</title>
-<meta name="description" content="How the largest known degree-4, diameter-4 graph &mdash; 104 vertices &mdash; is built, and the exact port each connector wires into.">
+<title>Largest known (4,4)-graph - Nishant Bhakar</title>
+<meta name="description" content="How the largest known degree-4, diameter-4 graph - 104 vertices - is built, and the exact port each connector wires into.">
 <link rel="canonical" href="https://f4t4nt.github.io/graph">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -652,7 +652,7 @@ PAGE = """<!doctype html>
      which is the only case where the shared scale has to give. */
   .gdiagram {{ max-width: 100%; height: auto; color: var(--ink); }}
   /* Vertex names are set in the same mono the drawings label them in, and are
-     spelled the way the edge record spells them -- L1, P34, X02a -- so there
+     spelled the way the edge record spells them -- L0, P23, X01a -- so there
      is nothing to translate between the prose, the figures and the file. */
   .sym {{
     font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -735,47 +735,54 @@ PAGE = """<!doctype html>
 
 <h1>The largest known degree-4, diameter-4 graph</h1>
 
-<p>{n} vertices and {m} edges, with every vertex at degree 4 and any two at
-most 4 steps apart, built from three identical blocks and a set of connectors
-between them.</p>
+<p>{n} vertices and {m} edges. As of August 22nd, 2026, this is the largest
+known degree-4, diameter-4 graph. In simple terms, every vertex has 4
+neighbors (degree-4), and no two vertices are more than 4 apart
+(diameter-4).</p>
 
-<p>The building block is a subdivided <span class="sym">K<sub>4,4</sub></span>:
-a complete bipartite graph between four &ldquo;L&rdquo; and four
-&ldquo;R&rdquo; vertices, each of its 16 edges split by a vertex in the
-middle. The vertex splitting <span class="sym">Li</span>&ndash;<span
-class="sym">Rj</span> is port <span class="sym">Pij</span>. That is 4 + 4 + 16
-= 24 vertices and 32 edges per block.</p>
+<p>The graph is built from three <span class="sym">K<sub>4,4</sub></span>
+graphs: complete bipartite graphs between four "L" and four "R" vertices.
+Each <span class="sym">L<sub>i</sub></span> and <span
+class="sym">R<sub>j</sub></span> is connected via a port <span
+class="sym">P<sub>ij</sub></span>, for 24 vertices and 32 edges per <span
+class="sym">K<sub>4,4</sub></span>.</p>
 
 <figure>
 {block_svg}
 </figure>
 
-<p>Three copies &mdash; A, B and C &mdash; account for 72 vertices and 96
-edges. An <span class="sym">Li</span> or <span class="sym">Rj</span> is already
-at degree 4; a port is at 2, short two edges.</p>
+<p>The three of these account for 72 vertices and 96 edges. Every <span
+class="sym">L<sub>i</sub></span> and <span class="sym">R<sub>j</sub></span> is
+already at degree 4; every port is at degree 2, short two edges.</p>
 
-<p>The remaining 32 vertices are connectors, in 16 matched pairs: X01a/X01b
-through X16a/X16b. Each runs one edge to its partner and one into each block,
-so it too sits at degree 4, and each port takes two of those, which brings the
-ports up as well. That is 16 matching edges and 96 connector&ndash;port edges,
-for {n} vertices and {m} in total.</p>
+<p>The remaining 32 vertices are connectors between the <span
+class="sym">K<sub>4,4</sub></span>s, in 16 matched pairs: X00a/X00b through
+X15a/X15b. Each connector has one edge to its partner and one edge into
+each <span class="sym">K<sub>4,4</sub></span>, bringing it to degree 4 and
+filling the 2 missing edges on each port.</p>
 
 <figure>
 {conn_svg}
 </figure>
 
-<p>The one thing none of that determines is <em>which</em> port in each block a
-given connector reaches. It is the construction's free parameter, and it is
-what the diameter turns on. The assignment used here is below.</p>
+<p>This still leaves out the one thing that makes the graph work: the exact
+mapping between connectors and ports. That's the construction's free
+parameter, and it's what gets the diameter down to 4. One such assignment is
+shown below.</p>
 
 {table}
 
 <h2>The whole thing</h2>
-<p>Laid out as a board: the three blocks along the top, each with its L
-branches on its top edge and its R branches down its left; the channel
-underneath carrying all 96 connector&ndash;port cables; the 32 connectors in
-a single row; and the matching below them as sixteen staples, each joining the
-two connectors of one pair.</p>
+<p>The full graph is shown below: the three <span
+class="sym">K<sub>4,4</sub></span>s along the top and the 16 connector pairs
+underneath. I originally found an asymmetric variant of this graph
+via a <span class="sym">Z<sub>8</sub></span> <a
+href="https://en.wikipedia.org/wiki/Voltage_graph">voltage graph</a> lift of
+a 13-vertex base multigraph. After much effort yet failing to push past
+n=104, I revisited the graph and noticed it could be simplified into the
+more structured form shown below. I'm <a
+href="https://www.janestreet.com/language-of-market-making/">30 bid</a> it's
+optimal - time will tell. :)</p>
 
 </div>
 
@@ -801,12 +808,12 @@ def build_page():
     facts = graph_facts(edges)
     ports = connector_ports(edges)
     # Every connector has the same four-edge shape, so which one the figure
-    # shows is only a question of which draws well: X08a is halfway along the
+    # shows is only a question of which draws well: X07a is halfway along the
     # row, so its three port cables leave in both directions and the picture
     # comes out about as tall as it is wide rather than a strip. The assert is
     # the part that matters -- a connector landing on the same port number in
     # all three blocks would suggest more regularity than the assignment has.
-    conn = "X08a"
+    conn = "X07a"
     assert len({ports[conn][b].split(".", 1)[1] for b in BLOCKS}) == 3, (
         f"{conn} reaches the same port twice"
     )

@@ -35,8 +35,8 @@ def f(x):
 
 def parse_edges():
     """The 208 edges, in the order the record lists them. Vertices carry the
-    labels the record itself uses: A.L1, A.R1, A.P11 inside a block, X01a and
-    its partner X01b for a connector pair."""
+    labels the record itself uses: A.L0, A.R0, A.P00 inside a block, X00a and
+    its partner X00b for a connector pair."""
     edges = []
     for line in DATA.read_text().splitlines():
         line = line.split("#")[0].strip()
@@ -55,8 +55,8 @@ def parse_edges():
 
 
 def is_conn(v):
-    """Connectors are X01a..X16b; every block vertex is qualified by its
-    block, so C.L1 is block C's first L branch, not a connector."""
+    """Connectors are X00a..X15b; every block vertex is qualified by its
+    block, so C.L0 is block C's first L branch, not a connector."""
     return v[0] == "X"
 
 
@@ -67,15 +67,15 @@ def block_positions(block):
     run straight along the row or column its ports share."""
     cy0 = GRID_CY[block]
     pos = {}
-    for i in range(1, 5):
-        pos[f"{block}.L{i}"] = (GRID_CX - COL_DX, cy0 + (i - 1) * ROW_DY)
-    for j in range(1, 5):
-        pos[f"{block}.R{j}"] = (GRID_CX + (j - 1) * COL_DX, cy0 - ROW_DY)
-    for i in range(1, 5):
-        for j in range(1, 5):
+    for i in range(4):
+        pos[f"{block}.L{i}"] = (GRID_CX - COL_DX, cy0 + i * ROW_DY)
+    for j in range(4):
+        pos[f"{block}.R{j}"] = (GRID_CX + j * COL_DX, cy0 - ROW_DY)
+    for i in range(4):
+        for j in range(4):
             pos[f"{block}.P{i}{j}"] = (
-                GRID_CX + (j - 1) * COL_DX,
-                cy0 + (i - 1) * ROW_DY,
+                GRID_CX + j * COL_DX,
+                cy0 + i * ROW_DY,
             )
     return pos
 
@@ -133,8 +133,8 @@ def free_gaps():
 
 def connector_positions(edges):
     """Y positions along the corridor: connectors spread evenly through the
-    block gaps, in the order the record's matching edges name them (X01a,
-    X01b, X02a, ...) so each matching edge is a short local hop and the rail
+    block gaps, in the order the record's matching edges name them (X00a,
+    X00b, X01a, ...) so each matching edge is a short local hop and the rail
     reads top to bottom in pair order."""
     labels = []
     seen = set()

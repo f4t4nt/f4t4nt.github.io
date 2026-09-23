@@ -132,8 +132,8 @@ COL_STEP = 2
 
 
 def port_col(port):
-    """Which of the four columns a port label sits in -- "A.P34" -> 3."""
-    return int(port.split(".", 1)[1][2]) - 1
+    """Which of the four columns a port label sits in -- "A.P23" -> 3."""
+    return int(port.split(".", 1)[1][2])
 
 
 def connector_order(edges):
@@ -353,7 +353,7 @@ class Layout:
         """The 24 nodes of one block: a 4x4 port grid, an L hub one standoff
         left of each row, and an R hub one standoff below each column.
 
-        The rows are handed out in reading order too, so L1 and the ports that
+        The rows are handed out in reading order too, so L0 and the ports that
         subdivide its edges come out on the side the reader starts from. The
         columns need no such care: the flat page's left-to-right becomes the
         turned page's top-to-bottom, which already reads forwards."""
@@ -362,18 +362,18 @@ class Layout:
         cols = [self.grid_cx + j * self.node_d for j in range(4)]
         last_row = max(rows)
         pos = {
-            f"{block}.L{i + 1}": (self.grid_cx - self.hub_gap, y)
+            f"{block}.L{i}": (self.grid_cx - self.hub_gap, y)
             for i, y in enumerate(rows)
         }
         pos.update(
             {
-                f"{block}.R{j + 1}": (x, last_row + self.hub_gap)
+                f"{block}.R{j}": (x, last_row + self.hub_gap)
                 for j, x in enumerate(cols)
             }
         )
         pos.update(
             {
-                f"{block}.P{i + 1}{j + 1}": (x, y)
+                f"{block}.P{i}{j}": (x, y)
                 for i, y in enumerate(rows)
                 for j, x in enumerate(cols)
             }
