@@ -175,8 +175,9 @@ def pack_tracks(ids, lo, hi, key, gap):
     sharing a track never overlap, so far fewer tracks are needed than
     ids -- this is what makes the bus read as densely, deliberately
     cabled rather than one permanent track per edge. Processed by lower
-    endpoint, first-fit uses exactly the channel's density, which is the
-    fewest tracks any packing could use."""
+    endpoint, first-fit is optimal, using exactly the channel's density;
+    any other order still packs correctly, just not necessarily as
+    tightly."""
     tracks = []
     lane_of = {}
     for i in sorted(ids, key=key):
@@ -344,9 +345,10 @@ class Layout:
         self.positions = {}
         for b in BLOCKS:
             self.positions.update(self.block_positions(b))
-        self.conn_labels = self.reading_order(connector_order(self.edges))
+        self.conn_labels = list(connector_order(self.edges))
+        rows = self.reading_order(range(N_CONN))
         # x stands in until the channel's width is known
-        for i, label in enumerate(self.conn_labels):
+        for label, i in zip(self.conn_labels, rows):
             self.positions[label] = (0, self.conn_y0 + i * self.conn_dy)
 
     def block_positions(self, block):
@@ -466,11 +468,12 @@ class Layout:
     def route_port_conn(self, bus_x0):
         """Splits the 96 port-connector edges into two directional bands (by
         whether the edge runs to a higher-y connector or a lower one), packs
-        each band by its own lower endpoint, and lays the bands out with a gap
-        between them. Returns (track x, exit kind, connector face offset per
-        edge, total track count)."""
+        each band greedily in connector order (X00a first), and lays the
+        bands out with a gap between them. Returns (track x, exit kind,
+        connector face offset per edge, total track count)."""
         kind = self.split_port_exits()
         cd = self.conn_faces()
+        rank = {label: i for i, label in enumerate(self.conn_labels)}
 
         lo, hi, down, up = {}, {}, [], []
         for e in self.port_conn:
@@ -479,8 +482,8 @@ class Layout:
             lo[e], hi[e] = sorted((ey, cy))
             (down if cy > ey else up).append(e)
 
-        lane1, n1 = pack_tracks(down, lo, hi, key=lambda e: lo[e], gap=self.track_gap)
-        lane2, n2 = pack_tracks(up, lo, hi, key=lambda e: lo[e], gap=self.track_gap)
+        lane1, n1 = pack_tracks(down, lo, hi, key=lambda e: rank[e[0]], gap=self.track_gap)
+        lane2, n2 = pack_tracks(up, lo, hi, key=lambda e: rank[e[0]], gap=self.track_gap)
 
         lane_x = {e: bus_x0 + t * self.U for e, t in lane1.items()}
         base2 = bus_x0 + (n1 + self.band_gap) * self.U

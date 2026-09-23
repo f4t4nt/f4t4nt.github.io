@@ -619,6 +619,19 @@ PAGE = """<!doctype html>
 <title>Largest known (4,4)-graph - Nishant Bhakar</title>
 <meta name="description" content="How the largest known degree-4, diameter-4 graph - 104 vertices - is built, and the exact port each connector wires into.">
 <link rel="canonical" href="https://f4t4nt.github.io/graph">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://f4t4nt.github.io/graph">
+<meta property="og:site_name" content="Nishant Bhakar">
+<meta property="og:title" content="Largest known (4,4)-graph - Nishant Bhakar">
+<meta property="og:description" content="How the largest known degree-4, diameter-4 graph - 104 vertices - is built, and the exact port each connector wires into.">
+<meta property="og:image" content="https://f4t4nt.github.io/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Nishant Bhakar - Member of technical staff at Etched.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Largest known (4,4)-graph - Nishant Bhakar">
+<meta name="twitter:description" content="How the largest known degree-4, diameter-4 graph - 104 vertices - is built, and the exact port each connector wires into.">
+<meta name="twitter:image" content="https://f4t4nt.github.io/assets/og-card.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">

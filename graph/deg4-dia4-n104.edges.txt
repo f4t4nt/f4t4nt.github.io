@@ -119,35 +119,30 @@ B.R3 B.P33
 # ============================================================================
 # L-P edges: C.Pxy -- C.Lx
 C.L0 C.P00
-C.L0 C.P01
 C.L0 C.P02
 C.L0 C.P03
+C.L0 C.P01
 
 C.L1 C.P10
-C.L1 C.P11
 C.L1 C.P12
 C.L1 C.P13
+C.L1 C.P11
 
 C.L2 C.P20
-C.L2 C.P21
 C.L2 C.P22
 C.L2 C.P23
+C.L2 C.P21
 
 C.L3 C.P30
-C.L3 C.P31
 C.L3 C.P32
 C.L3 C.P33
+C.L3 C.P31
 
 # R-P edges: C.Pxy -- C.Ry
 C.R0 C.P00
 C.R0 C.P10
 C.R0 C.P20
 C.R0 C.P30
-
-C.R1 C.P01
-C.R1 C.P11
-C.R1 C.P21
-C.R1 C.P31
 
 C.R2 C.P02
 C.R2 C.P12
@@ -158,6 +153,11 @@ C.R3 C.P03
 C.R3 C.P13
 C.R3 C.P23
 C.R3 C.P33
+
+C.R1 C.P01
+C.R1 C.P11
+C.R1 C.P21
+C.R1 C.P31
 
 # ============================================================================
 # CONNECTOR-TO-PORT EDGES, BLOCK A
@@ -245,39 +245,39 @@ B.P33 X15a
 # ============================================================================
 C.P00 X00a
 C.P00 X15a
-C.P01 X02b
-C.P01 X13b
-C.P02 X07b
-C.P02 X08b
-C.P03 X05a
-C.P03 X10a
+C.P02 X02b
+C.P02 X13b
+C.P03 X07b
+C.P03 X08b
+C.P01 X05a
+C.P01 X10a
 
 C.P10 X05b
 C.P10 X10b
-C.P11 X07a
-C.P11 X08a
-C.P12 X02a
-C.P12 X13a
-C.P13 X00b
-C.P13 X15b
+C.P12 X07a
+C.P12 X08a
+C.P13 X02a
+C.P13 X13a
+C.P11 X00b
+C.P11 X15b
 
 C.P20 X03b
 C.P20 X12b
-C.P21 X01a
-C.P21 X14a
-C.P22 X04a
-C.P22 X11a
-C.P23 X06b
-C.P23 X09b
+C.P22 X01a
+C.P22 X14a
+C.P23 X04a
+C.P23 X11a
+C.P21 X06b
+C.P21 X09b
 
 C.P30 X06a
 C.P30 X09a
-C.P31 X04b
-C.P31 X11b
-C.P32 X01b
-C.P32 X14b
-C.P33 X03a
-C.P33 X12a
+C.P32 X04b
+C.P32 X11b
+C.P33 X01b
+C.P33 X14b
+C.P31 X03a
+C.P31 X12a
 
 # ============================================================================
 # CONNECTOR MATCHING EDGES
