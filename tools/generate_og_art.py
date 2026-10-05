@@ -5,7 +5,7 @@ into the card; this module is also the drawing's own artifact.
 
 The routing lives in pcb_layout.Layout, which /graph's figure shares. What is
 decided here is only the card's dressing: the tight default spacing, one stroke
-width and opacity for every cable, one square for every node, no labels.
+width and opacity for every cable, one circle for every node, no labels.
 """
 
 import pathlib
@@ -16,11 +16,11 @@ from pcb_layout import Layout
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "og-art.svg"
 
-# a quarter of the lattice pitch, so the lattice reads as line work rather
+# A fraction of the lattice pitch, so the lattice reads as line work rather
 # than as solid bands
-WIRE_W_U = 0.25
-WIRE_OPACITY = 0.5
-INK = "#181a1e"
+WIRE_W_U = 0.375
+WIRE_OPACITY = 0.6
+INK = "#192b46"
 
 L = Layout()
 W, H = L.W, L.H
@@ -45,17 +45,16 @@ def build_art():
     out.append(
         f'<g fill="none" stroke="{INK}"'
         f' stroke-width="{f(WIRE_W_U * L.U)}"'
-        f' opacity="{f(WIRE_OPACITY)}">'
+        f' opacity="{f(WIRE_OPACITY)}" stroke-linejoin="round">'
     )
-    for _u, _w, pts in L.wires:
-        out.append(path(pts))
+    for u, w, pts in L.wires:
+        out.append(path([L.positions[u], *pts, L.positions[w]]))
     out.append("</g>")
 
     out.append(f'<g fill="{INK}" stroke="none">')
     for x, y in L.positions.values():
         out.append(
-            f'<rect x="{f(x - L.U)}" y="{f(y - L.U)}"'
-            f' width="{f(L.pad)}" height="{f(L.pad)}"/>'
+            f'<circle cx="{f(x)}" cy="{f(y)}" r="{f(L.pad / 2)}"/>'
         )
     out.append("</g>")
 
