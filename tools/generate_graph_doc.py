@@ -170,11 +170,10 @@ def silk(x, y, text, anchor="middle", members=()):
 
 
 def pad(label, x, y, side):
-    """A node, drawn the way the board draws one: a square pad centred on its
-    own point. Nothing in this site's drawings is round."""
+    """A circular node centred on its own point."""
     return (
         f'<rect class="gnode" data-v="{label}" x="{f(x - side / 2)}"'
-        f' y="{f(y - side / 2)}" width="{f(side)}" height="{f(side)}"/>'
+        f' y="{f(y - side / 2)}" width="{f(side)}" height="{f(side)}" rx="{f(side / 2)}"/>'
     )
 
 
@@ -195,7 +194,8 @@ def block_figure(L):
     left, and it inherits the routing with everything that follows from it: the
     hubs standing half a port pitch off the grid, each of a hub's four spokes on
     its own lane, and each of the four leaving its pad by its own point rather
-    than all four from the centre."""
+    than sharing the same lane. Short extensions join those ports to the
+    circular nodes' centres."""
     pre = f"{BF_BLOCK}."
     pos = {v: L.pt(*L.positions[v]) for v in L.positions if v.startswith(pre)}
     wires = [
@@ -241,6 +241,7 @@ def block_figure(L):
         f' stroke-width="{f(STROKE)}" stroke-linejoin="round">'
     )
     for u, v, pts in wires:
+        pts = [pos[u], *pts, pos[v]]
         d = f"M {f(pts[0][0])} {f(pts[0][1])}" + "".join(
             f" L {f(x)} {f(y)}" for x, y in pts[1:]
         )
@@ -372,6 +373,7 @@ def connector_figure(L, conn):
         f' stroke-width="{f(STROKE)}" stroke-linejoin="round">'
     )
     for u, v, pts in wires:
+        pts = [pos[u], *pts, pos[v]]
         d = f"M {f(pts[0][0])} {f(pts[0][1])}" + "".join(
             f" L {f(x)} {f(y)}" for x, y in pts[1:]
         )
@@ -487,7 +489,7 @@ def full_figure(L):
         f' stroke-width="{f(STROKE)}" stroke-linejoin="round">'
     )
     for u, w, pts in L.wires:
-        p = [L.pt(x, y) for x, y in pts]
+        p = [L.pt(*L.positions[u]), *[L.pt(x, y) for x, y in pts], L.pt(*L.positions[w])]
         d = f"M {f(p[0][0])} {f(p[0][1])}" + "".join(
             f" L {f(x)} {f(y)}" for x, y in p[1:]
         )
@@ -502,7 +504,7 @@ def full_figure(L):
         out.append(
             f'<rect class="gnode" data-v="{label}"'
             f' x="{f(cx - L.U)}" y="{f(cy - L.U)}"'
-            f' width="{f(L.pad)}" height="{f(L.pad)}"/>'
+            f' width="{f(L.pad)}" height="{f(L.pad)}" rx="{f(L.pad / 2)}"/>'
         )
     out.append("</g>")
 
@@ -638,9 +640,9 @@ PAGE = """<!doctype html>
 <link rel="stylesheet" href="/styles.css">
 <style>
   .doc {{ max-width: 45rem; margin: 0 auto; padding: 4.5rem 1.5rem 6rem; }}
-  .doc h1 {{ font-size: 1.5rem; margin: 0 0 0.3rem; }}
+  .doc h1 {{ font-size: clamp(1.5rem, 3.5vw, 1.85rem); line-height: 1.25; letter-spacing: -0.025em; margin: 0 0 1.25rem; }}
   .doc .sub {{ color: var(--muted); margin: 0 0 2.5rem; }}
-  .doc h2 {{ margin-top: 2.75rem; }}
+  .doc h2 {{ font-size: 1.3rem; margin-top: 2.75rem; padding-top: 0; border-bottom: 1px solid var(--rule); }}
   /* Let the browser look ahead before it breaks a line. Most of the bad ones
      here came from a mono symbol landing at the margin, so symbols are kept
      whole as well -- a name like Pij or Li-Rj reads as one word and should
@@ -742,11 +744,12 @@ PAGE = """<!doctype html>
     background: color-mix(in srgb, var(--rule) 16%, var(--paper));
   }}
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="doc lead">
 
-<h1>The largest known degree-4, diameter-4 graph</h1>
+<h1>Largest known degree-4, diameter-4 graph</h1>
 
 <p>{n} vertices and {m} edges. As of August 22nd, 2026, this is the largest
 known degree-4, diameter-4 graph. In simple terms, every vertex has 4

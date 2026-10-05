@@ -337,12 +337,12 @@ def build_svg():
         )
     out.append("</g>")
 
-    # every vertex -- hub, port, or connector -- reads as one uniform filled square
+    # Every vertex uses the same circular node, regardless of its role.
     out.append('<g fill="currentColor" stroke="none">')
     for label, (x, y) in positions.items():
         out.append(
             f'<rect class="gnode" data-v="{label}" x="{f(x - NODE_R)}" y="{f(y - NODE_R)}" '
-            f'width="{f(2 * NODE_R)}" height="{f(2 * NODE_R)}"/>'
+            f'width="{f(2 * NODE_R)}" height="{f(2 * NODE_R)}" rx="{f(NODE_R)}"/>'
         )
     out.append("</g>")
 
