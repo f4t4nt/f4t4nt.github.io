@@ -144,8 +144,11 @@ h1 {
   margin-top: 2.5rem;
 }
 
-h2 {
+.wrap section > h2 {
   text-align: right;
+}
+
+h2 {
   font-family: "Lora", Georgia, serif;
   font-size: 1.15rem;
   font-weight: 500;
