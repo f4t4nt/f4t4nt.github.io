@@ -4,7 +4,7 @@
   --paper: #f6f9fd;
   --ink: #192b46;
   --ink-lit: #081931;
-  --muted: #536781;
+  --muted: #465b76;
   --rule: #cdd9e9;
   --rule-strong: #192b46;
   --accent: #2259cf;
@@ -288,16 +288,29 @@ a:hover {
   }
 
   .masthead {
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
     gap: 1rem;
     margin-left: 0;
+  }
+
+  .masthead > div:first-child {
+    display: contents;
   }
 
   .masthead h1 {
     max-width: 8ch;
   }
 
+  .masthead .standfirst {
+    grid-column: 1 / -1;
+    margin-top: 0.2rem;
+  }
+
   .portrait {
+    grid-column: 2;
+    grid-row: 1;
     width: 80px;
     height: 96px;
   }
@@ -316,6 +329,11 @@ a:hover {
     margin-bottom: 0.5rem;
     border-bottom: 1px solid var(--rule);
     padding-bottom: 0.6rem;
+  }
+
+  .record > li {
+    padding: 0.5rem 0.85rem 0.65rem;
+    margin-bottom: 0.25rem;
   }
 
   .contact {
