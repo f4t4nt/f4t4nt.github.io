@@ -7,24 +7,26 @@
   } catch {}
 
   document.addEventListener("DOMContentLoaded", () => {
-    const button = document.querySelector(".theme-toggle");
-    if (!button) return;
+    const buttons = [...document.querySelectorAll(".theme-toggle")];
+    if (!buttons.length) return;
     const isDark = () => root.dataset.theme
       ? root.dataset.theme === "dark"
       : systemTheme.matches;
     const updateButton = () => {
       const label = isDark() ? "Switch to light mode" : "Switch to dark mode";
-      button.setAttribute("aria-label", label);
-      button.title = label;
-      button.dataset.dark = String(isDark());
+      buttons.forEach(button => {
+        button.setAttribute("aria-label", label);
+        button.title = label;
+        button.dataset.dark = String(isDark());
+      });
     };
-    button.addEventListener("click", () => {
+    buttons.forEach(button => button.addEventListener("click", () => {
       root.dataset.theme = isDark() ? "light" : "dark";
       try { localStorage.setItem("theme", root.dataset.theme); } catch {}
       updateButton();
-    });
+    }));
     systemTheme.addEventListener("change", updateButton);
     updateButton();
-    button.hidden = false;
+    buttons.forEach(button => { button.hidden = false; });
   });
 })();

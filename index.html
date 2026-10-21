@@ -25,7 +25,6 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
@@ -730,8 +729,11 @@
   if (!svg || !rail) return;
 
   var viewBox = svg.viewBox.baseVal;
+  var content = document.querySelector(".wrap");
   function sizeRail() {
-    var targetH = Math.max(document.documentElement.scrollHeight, window.innerHeight);
+    // Measure content independently: scrollHeight includes the rail's old size.
+    var contentBottom = content.getBoundingClientRect().bottom + window.scrollY;
+    var targetH = Math.ceil(Math.max(contentBottom, window.innerHeight));
     var scale = targetH / viewBox.height;
     rail.style.height = targetH + "px";
     rail.style.width = (viewBox.width * scale) + "px";

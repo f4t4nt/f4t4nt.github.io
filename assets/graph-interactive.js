@@ -89,6 +89,11 @@
         if (labelSet[el.getAttribute("data-v")]) el.setAttribute(name, "1");
         else el.removeAttribute(name);
       });
+      if (name === "data-pin" && pinnable) {
+        hitNodes.forEach(function (el) {
+          el.setAttribute("aria-pressed", String(!!labelSet[el.getAttribute("data-v")]));
+        });
+      }
     }
 
     function highlight(label) {
@@ -199,6 +204,7 @@
         el.removeAttribute("data-pin");
       });
       clearEdges();
+      if (pinnable) hitNodes.forEach(function (el) { el.setAttribute("aria-pressed", "false"); });
       groupLabels.forEach(function (el) { el.removeAttribute("data-active"); });
     }
 
@@ -277,16 +283,29 @@
       clear();
     }
 
-    hitNodes.forEach(function (hit) {
+    if (pinnable) {
+      svg.setAttribute("role", "group");
+      svg.setAttribute("aria-description", "Use arrow keys to move between vertices, Enter or Space to select a path source, and Escape to clear it.");
+    }
+    hitNodes.forEach(function (hit, index) {
       var label = hit.getAttribute("data-v");
-      hit.addEventListener("pointerenter", function () {
+      function previewVertex() {
         if (pinned) highlightPath(pinned, label);
         else highlight(label);
-      });
+      }
+      hit.addEventListener("pointerenter", previewVertex);
       hit.addEventListener("pointerleave", rest);
       if (!pinnable) return;
-      hit.addEventListener("click", function (evt) {
-        evt.stopPropagation();
+      hit.setAttribute("tabindex", index === 0 ? "0" : "-1");
+      hit.setAttribute("role", "button");
+      hit.setAttribute("aria-label", "Vertex " + label);
+      hit.setAttribute("aria-pressed", "false");
+      hit.addEventListener("focus", function () {
+        hitNodes.forEach(function (node) { node.setAttribute("tabindex", node === hit ? "0" : "-1"); });
+        previewVertex();
+      });
+      hit.addEventListener("blur", rest);
+      function togglePin() {
         if (pinned === label) {
           unpin();
           highlight(label);
@@ -294,6 +313,30 @@
           pinned = label;
           highlightPath(label, label);
         }
+      }
+      hit.addEventListener("click", function (evt) {
+        evt.stopPropagation();
+        togglePin();
+      });
+      hit.addEventListener("keydown", function (evt) {
+        if (evt.key === "Enter" || evt.key === " ") {
+          evt.preventDefault();
+          togglePin();
+          return;
+        }
+        var direction = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[evt.key];
+        if (!direction) return;
+        evt.preventDefault();
+        var origin = pos[label], next = null, best = Infinity;
+        hitNodes.forEach(function (node) {
+          var target = pos[node.getAttribute("data-v")];
+          var dx = target.cx - origin.cx, dy = target.cy - origin.cy;
+          var forward = dx * direction[0] + dy * direction[1];
+          // Favor nearby vertices along the requested screen direction.
+          var score = forward + 2 * Math.abs(dx * direction[1] - dy * direction[0]);
+          if (forward > 0 && score < best) { next = node; best = score; }
+        });
+        if (next) next.focus();
       });
     });
 

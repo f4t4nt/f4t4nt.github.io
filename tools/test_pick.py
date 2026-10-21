@@ -48,10 +48,6 @@ def all_distances(adj):
     return dist
 
 
-async def board_handle(page):
-    return await page.evaluate_handle(f"document.querySelector('{BOARD}').__ghDiagram")
-
-
 async def test_paths(page, adj, dist):
     """Every pair: the page's path is a real walk, and it is a shortest one."""
     paths = await page.evaluate(
@@ -220,13 +216,9 @@ async def main():
         browser = await p.chromium.launch()
         page = await browser.new_page(viewport={"width": 1600, "height": 1200})
         await page.goto(URL)
-        await page.wait_for_timeout(400)
-        if not await page.evaluate(
+        await page.wait_for_function(
             f"!!(document.querySelector('{BOARD}') || {{}}).__ghDiagram"
-        ):
-            print("figure 3 never initialized")
-            await browser.close()
-            return 1
+        )
 
         results = [
             await test_paths(page, adj, dist),

@@ -8,9 +8,8 @@ page cannot drift from the record. The claims it makes about the graph
 asserted here rather than written down, which is why editing the record is
 enough to keep the page honest.
 
-The full figure at the bottom is the same routed drawing as the card's art,
-from pcb_layout.Layout, quarter-turned and with the spacing knobs set for
-reading rather than for the card's composition.
+The full figure uses pcb_layout.Layout's routed geometry, transposed to stack
+the blocks vertically, with spacing tuned for reading rather than card art.
 
 The page is written to graph.html and carries no frontmatter: GitHub Pages
 resolves an extensionless request straight to the .html file beside it, so
@@ -34,6 +33,7 @@ anything that wants one figure on its own.
 
 import collections
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -110,12 +110,8 @@ def connector_ports(edges):
 
 # --- one scale, for all three figures --------------------------------------
 #
-# Every figure on the page is drawn on the board's own lattice -- pitch U, pads
-# of side 2U -- and rendered at SCALE pixels per lattice unit. So a pad, a
-# label and a cable come out the same size on the page in all three, and the
-# only thing that differs between them is how much of the graph each shows.
-# The alternative, letting each figure pick its own units and then sizing it by
-# eye in CSS, is what made the three disagree about how big a vertex is.
+# All figures use the board's lattice. SCALE sets their intrinsic SVG sizes;
+# the full graph is fitted to the article width by CSS.
 # fmt: off
 U = 8                  # the lattice pitch, the same one pcb_layout works on
 SCALE = 0.45           # lattice units to CSS pixels, page-wide
@@ -282,11 +278,17 @@ def block_figure(L):
         )
     out.append("</g>")
 
+    x, y = pos[f"{pre}P00"]
+    out.append(
+        f'<g style="color:var(--accent,currentColor)" font-family="{MONO}">'
+        f'<text x="{f(x)}" y="{f(y + TYPE * 1.15)}" text-anchor="middle"'
+        f' fill="currentColor" font-size="{f(TYPE * .8)}">P00</text></g>'
+    )
     out.append('<g class="ghit-layer">')
     for label, (x, y) in pos.items():
         out.append(
             f'<circle class="ghit" data-v="{label}"'
-            f' cx="{f(x)}" cy="{f(y)}" r="{f(2.5 * U)}"/>'
+            f' cx="{f(x)}" cy="{f(y)}" r="{f(2.5 * U)}" fill="transparent"/>'
         )
     out.append("</g></svg>")
     return "".join(out)
@@ -411,7 +413,7 @@ def connector_figure(L, conn):
     for v, (x, y) in pos.items():
         out.append(
             f'<circle class="ghit" data-v="{v}" cx="{f(x)}"'
-            f' cy="{f(y)}" r="{f(2.5 * U)}"/>'
+            f' cy="{f(y)}" r="{f(2.5 * U)}" fill="transparent"/>'
         )
     out.append("</g></svg>")
     return "".join(out)
@@ -439,15 +441,17 @@ def staple_bottom(L):
 
 
 def full_figure(L):
-    """The 104 vertices and 208 edges as one board. pcb_layout has already
-    done the work; this only paints it, labels the landmarks, and lays the
-    hover targets over the top.
+    """Render the routed graph vertically, with A/B/C left and connectors right.
 
-    Quarter-turned, the drawing reads down the page: the three blocks side by
-    side along the top, the channel carrying all 96 port-connector cables
-    below them, the 32 connectors in a single row, and the matching underneath
-    as sixteen staples of one depth."""
+    The small diagrams use Layout's horizontal orientation. Transpose its
+    coordinates here, before serialization, so paths, nodes, labels and hit
+    targets all share the final coordinate system.
+    """
     assert L.U == U, "the board is drawn on a different lattice from the page"
+    def point(x, y):
+        px, py = L.pt(x, y)
+        return py, px
+
     # Layout sizes its page from the cables and the pads; the block letters and
     # the pair numbers are this page's own addition, and stand outside both. So
     # the box is opened by however much of that type would otherwise fall off
@@ -467,21 +471,20 @@ def full_figure(L):
         - 2 * EM * TYPE
     )
     left = max(0.0, AIR - r_ink)
+    horizontal_margin = 2 * TYPE
+    vertical_margin = 0.5 * TYPE
+    width = L.H + head + tail + 2 * horizontal_margin
+    height = L.W + left + 2 * vertical_margin
 
     out = []
     out.append(
         f'<svg id="fullgraph" class="gdiagram" data-pick="1"'
-        f' viewBox="{f(-left)} {f(-head)} {f(L.W + left)}'
-        f' {f(L.H + head + tail)}"'
-        f' width="{f((L.W + left) * SCALE)}"'
-        f' height="{f((L.H + head + tail) * SCALE)}"'
+        f' viewBox="{f(-head - horizontal_margin)} {f(-left - vertical_margin)}'
+        f' {f(width)} {f(height)}"'
+        f' width="{f(width * SCALE)}" height="{f(height * SCALE)}"'
         f' xmlns="http://www.w3.org/2000/svg"'
-        f' role="img" aria-label="The whole 104-vertex graph drawn as a'
-        f" circuit board: three blocks along the top, a routing channel"
-        f" of 96 cables below them, the 32 connectors in a row, and the"
-        f" 16 matching edges as staples at the bottom. Hover any vertex"
-        f" to highlight its four neighbors, or click one and hover a"
-        f' second to trace a shortest path between them.">'
+        ' role="img" aria-label="The complete 104-vertex graph: blocks A, B and C'
+        ' stacked on the left, connected to 16 connector pairs on the right.">'
     )
 
     out.append(
@@ -489,18 +492,19 @@ def full_figure(L):
         f' stroke-width="{f(STROKE)}" stroke-linejoin="round">'
     )
     for u, w, pts in L.wires:
-        p = [L.pt(*L.positions[u]), *[L.pt(x, y) for x, y in pts], L.pt(*L.positions[w])]
+        p = [point(*L.positions[u]), *[point(x, y) for x, y in pts], point(*L.positions[w])]
         d = f"M {f(p[0][0])} {f(p[0][1])}" + "".join(
             f" L {f(x)} {f(y)}" for x, y in p[1:]
         )
+        opacity = "0.32" if is_conn(u) != is_conn(w) else "0.65"
         out.append(
-            f'<path class="gedge" data-u="{u}" data-w="{w}" opacity="0.55" d="{d}"/>'
+            f'<path class="gedge" data-u="{u}" data-w="{w}" opacity="{opacity}" d="{d}"/>'
         )
     out.append("</g>")
 
     out.append('<g fill="currentColor" stroke="none">')
     for label, (x, y) in L.positions.items():
-        cx, cy = L.pt(x, y)
+        cx, cy = point(x, y)
         out.append(
             f'<rect class="gnode" data-v="{label}"'
             f' x="{f(cx - L.U)}" y="{f(cy - L.U)}"'
@@ -508,24 +512,22 @@ def full_figure(L):
         )
     out.append("</g>")
 
-    # Silkscreen: paint-order puts a paper-coloured stroke behind every glyph,
-    # so a label stays legible wherever it has to sit -- which matters for the
-    # R labels, whose only room is over the corridor lanes beside the block.
+    # A paper-colored outline keeps labels readable beside crossing routes.
     out.append(
         '<g fill="currentColor" fill-opacity="0.6" stroke="var(--paper)"'
         f' stroke-width="{f(0.6 * L.U)}" stroke-linejoin="round"'
-        ' paint-order="stroke fill"'
+        ' paint-order="stroke fill" dominant-baseline="middle"'
         f' font-family="{MONO}">'
     )
     for b in BLOCKS:
-        # turned, a block's L hubs run along its top edge and its R hubs down
-        # its left, so the letter goes above the block, clear of the L labels
+        # Block letters sit outside the L labels. R labels form a row above
+        # the routed spokes, rather than being printed over those wires.
         block = [v for v in L.positions if v.startswith(f"{b}.")]
         xs = [L.pt(*L.positions[v])[0] for v in block]
         top = L.pt(*L.positions[f"{b}.L0"])[1]
         out.append(
-            f'<text{named(block)} x="{f((min(xs) + max(xs)) / 2)}"'
-            f' y="{f(top - LETTER_UP)}"'
+            f'<text{named(block)} x="{f(top - LETTER_UP - 0.7 * TYPE)}"'
+            f' y="{f((min(xs) + max(xs)) / 2)}"'
             f' font-size="{f(LETTER_SIZE)}"'
             f' font-weight="600" fill-opacity="0.8"'
             f' text-anchor="middle">{b}</text>'
@@ -533,38 +535,37 @@ def full_figure(L):
         for i in range(4):
             x, y = L.pt(*L.positions[f"{b}.L{i}"])
             out.append(
-                f'<text{named(hub_group(b, "L", i))} x="{f(x)}"'
-                f' y="{f(y - 2.5 * U)}"'
+                f'<text{named(hub_group(b, "L", i))} x="{f(y - 2.5 * U)}"'
+                f' y="{f(x)}"'
                 f' font-size="{f(TYPE)}"'
-                f' text-anchor="middle">L{i}</text>'
+                f' text-anchor="end">L{i}</text>'
             )
         for j in range(4):
             x, y = L.pt(*L.positions[f"{b}.R{j}"])
             out.append(
-                silk(x - R_GAP, y, f"R{j}", anchor="end", members=hub_group(b, "R", j))
+                f'<text{named(hub_group(b, "R", j))} x="{f(y)}"'
+                f' y="{f(x - R_GAP - 1.75 * TYPE)}"'
+                f' font-size="{f(TYPE)}" text-anchor="middle">R{j}</text>'
             )
 
-    # A pair's two connectors are adjacent in the row and its staple joins
-    # them, so the number goes under the staple, centred on the span it names.
-    # Above the row is where the 96 channel cables come in, and a number set in
-    # among them had to be read off the one clear gap it happened to sit in.
+    # Pair names sit to the right of their matching staples, clear of routes.
     for lo, hi in zip(L.conn_labels[::2], L.conn_labels[1::2]):
         assert lo[:-1] == hi[:-1], f"{lo} and {hi} are not a pair"
         a, b = L.pt(*L.positions[lo]), L.pt(*L.positions[hi])
         out.append(
-            f'<text{named([lo, hi])} x="{f((a[0] + b[0]) / 2)}"'
-            f' y="{f(pair_y)}"'
-            f' font-size="{f(TYPE)}" text-anchor="middle">'
+            f'<text{named([lo, hi])} x="{f(pair_y)}"'
+            f' y="{f((a[0] + b[0]) / 2)}"'
+            f' font-size="{f(TYPE)}" text-anchor="start">'
             f"{lo[:-1]}</text>"
         )
     out.append("</g>")
 
     out.append('<g class="ghit-layer">')
     for label, (x, y) in L.positions.items():
-        cx, cy = L.pt(x, y)
+        cx, cy = point(x, y)
         out.append(
             f'<circle class="ghit" data-v="{label}" cx="{f(cx)}"'
-            f' cy="{f(cy)}" r="{f(2.5 * U)}"/>'
+            f' cy="{f(cy)}" r="{f(2.5 * U)}" fill="transparent"/>'
         )
     out.append("</g></svg>")
     return "".join(out)
@@ -572,7 +573,6 @@ def full_figure(L):
 
 # --- the port table --------------------------------------------------------
 
-RECORD = "https://f4t4nt.github.io/graph/deg4-dia4-n104.edges.txt"
 
 
 def port_table(ports):
@@ -599,9 +599,7 @@ def port_table(ports):
     )
     return (
         '<table class="ports">\n'
-        f'<caption>Complete graph listed <a href="{RECORD}">here</a>.</caption>\n'
-        '<colgroup><col class="pair">'
-        '<col class="block" span="6"></colgroup>\n'
+        '<caption>Complete graph listed <a href="/graph/deg4-dia4-n104.edges.txt">here</a>.</caption>\n'
         "<thead>\n"
         '<tr><th rowspan="2" scope="col">pair</th>'
         '<th colspan="3" scope="colgroup" class="half">a</th>'
@@ -639,22 +637,56 @@ PAGE = """<!doctype html>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<script src="/assets/theme.js"></script>
 <style>
-  .doc {{ max-width: 45rem; margin: 0 auto; padding: 4.5rem 1.5rem 6rem; }}
-  .doc h1 {{ font-size: clamp(1.5rem, 3.5vw, 1.85rem); line-height: 1.25; letter-spacing: -0.025em; margin: 0 0 1.25rem; }}
-  .doc .sub {{ color: var(--muted); margin: 0 0 2.5rem; }}
-  .doc h2 {{ font-size: 1.3rem; margin-top: 2.75rem; padding-top: 0; border-bottom: 1px solid var(--rule); }}
-  /* Let the browser look ahead before it breaks a line. Most of the bad ones
-     here came from a mono symbol landing at the margin, so symbols are kept
-     whole as well -- a name like Pij or Li-Rj reads as one word and should
-     break like one.
-
-     The site's stylesheet holds a paragraph to a 34rem measure, which is right
-     for the home page, where nothing else on it is any wider. Here the rules
-     and the port table run the full column, and a paragraph stopping short of
-     them reads as a ragged second margin down the page. So the prose takes the
-     column too, and there is one left edge and one right edge throughout. */
-  .doc p {{ max-width: none; text-wrap: pretty; }}
+  .doc {{ margin: 0; padding: 4rem 0 6rem; font-size: 18px; line-height: 1.7; }}
+  .graph-layout {{ display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 3rem; max-width: 1024px; margin: auto; padding: 0 3rem; }}
+  .graph-layout main {{ min-width: 0; }}
+  .graph-contents {{ position: sticky; top: 2rem; align-self: start; background: var(--paper); margin-top: 2rem; font-size: 14px; line-height: 1.4; }}
+  .graph-contents nav {{ display: flex; align-items: center; justify-content: space-between; gap: 1rem; }}
+  .graph-contents a {{ border: 0; text-decoration: none; color: var(--muted); }}
+  .graph-contents ol {{ list-style: none; margin: 0; padding: 0; }}
+  .graph-contents li {{ margin: 0 0 .8rem; }}
+  .graph-contents li a {{ display: flex; gap: .65rem; }}
+  .graph-contents a:hover, .graph-contents a[aria-current] {{ color: var(--accent); }}
+  .graph-contents a[aria-current] {{ text-decoration: underline; text-underline-offset: .25em; }}
+  .graph-layout :is(h2, #top) {{ scroll-margin-top: 5rem; }}
+  .graph-top {{ max-width: 1024px; margin: 2.5rem auto 0; padding: 0 3rem; }}
+  .graph-top nav {{ display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.2rem; border-bottom: 1px solid var(--rule); font-size: 16px; }}
+  .graph-top nav > div {{ display: flex; align-items: center; gap: 1.6rem; }}
+  .graph-top a {{ text-decoration: none; border: 0; }}
+  .graph-top .theme-toggle {{ margin: 0; }}
+  .doc.lead {{ padding: 2rem 0 0; }}
+  .graph-heading {{ padding-bottom: .5rem; }}
+  .doc h1 {{ font-size: 36px; line-height: 1.2; letter-spacing: -.035em; margin: 0; text-wrap: balance; }}
+  .doc h1 span {{ white-space: nowrap; }}
+  .doc .article-date {{ color: var(--muted); font-size: 15px; margin: 0 0 1.2rem; }}
+  .doc .abstract {{ font-size: 18px; line-height: 1.65; margin: 1.5rem 0 0; }}
+  .explanation {{ display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 2rem; align-items: start; margin-top: 2.25rem; }}
+  .explanation h2 {{ margin-top: 0; }}
+  .doc .explanation figure {{ margin: 0; }}
+  .explanation p:last-child {{ margin-bottom: 0; }}
+  .graph-section {{ margin-top: 2.25rem; }}
+  .graph-section + .graph-section {{ margin-top: 1.75rem; }}
+  .graph-section > h2 {{ margin-top: 0; }}
+  .doc .graph-section p {{ max-width: none; }}
+  .port-table {{ width: 100%; }}
+  @media (max-width: 1000px) {{
+    .graph-top {{ padding-inline: 1.5rem; }}
+    .graph-layout {{ display: block; max-width: 800px; padding-inline: 1.5rem; }}
+    .graph-contents {{ top: 0; z-index: 10; margin: 0; padding: .8rem 0; border-bottom: 1px solid var(--rule); }}
+    .graph-contents nav {{ display: block; }}
+    .graph-contents ol {{ display: flex; flex-wrap: wrap; gap: .5rem 1rem; }}
+    .graph-contents li {{ margin: 0; }}
+    .graph-layout h2 {{ scroll-margin-top: 8rem; }}
+    .doc.lead {{ padding-top: 1.5rem; }}
+  }}
+  @media (max-width: 650px) {{
+    .explanation {{ display: block; }}
+    .doc .explanation figure {{ margin: 1.8rem auto 2.5rem; }}
+  }}
+  .doc h2 {{ font-family: "Lora", Georgia, serif; font-weight: 500; font-size: 25px; line-height: 1.3; margin: 0 0 1rem; padding: 0; border: 0; color: var(--ink-lit); letter-spacing: -.025em; }}
+  .doc p {{ max-width: 40rem; text-wrap: pretty; }}
   .doc .back {{
     display: inline-block;
     margin-top: 3rem;
@@ -662,10 +694,7 @@ PAGE = """<!doctype html>
     font-size: 0.85rem;
   }}
   .doc figure {{ margin: 2rem 0; text-align: center; }}
-  /* Every figure arrives with its own width and height in pixels, set from the
-     one scale the generator draws all three at, so nothing here picks a size.
-     All the stylesheet does is let a window narrower than a figure shrink it,
-     which is the only case where the shared scale has to give. */
+  /* Preserve intrinsic proportions when the available width shrinks. */
   .gdiagram {{ max-width: 100%; height: auto; color: var(--ink); }}
   /* Vertex names are set in the same mono the drawings label them in, and are
      spelled the way the edge record spells them -- L0, P23, X01a -- so there
@@ -677,37 +706,30 @@ PAGE = """<!doctype html>
   }}
   .sym sub, .sym sup {{ font-size: 0.75em; }}
 
-  /* The board is wider than the prose's measure, so it breaks out of the
-     column -- but it is not stretched to any particular width: it takes the
-     size the shared scale gives it, the same as the other two figures, and
-     this only centres it. */
-  .board {{
-    width: fit-content;
-    max-width: calc(100vw - 3rem);
-    margin: 1.5rem auto 0;
+  /* Preserve the drawing's readable desktop scale within the article area. */
+  .doc .board {{
+    width: 100%;
+    max-width: 560px;
+    margin: .75rem auto 1rem;
   }}
-  /* The board sits between two .doc columns, so its air is theirs: the tail
-     the page ends with would otherwise open up between the board and the
-     paragraph introducing it. */
-  .doc.lead {{ padding-bottom: 0; }}
+  .board .gdiagram {{ display: block; width: 100%; }}
   .doc.tail {{ padding-top: 0; }}
   /* The table is a picture of the wiring, not text to quote: dragging across
      it should no more select "P13 P42 P34" than dragging across a figure
      picks out its labels. */
   .doc table.ports {{
-    width: 100%;
-    table-layout: fixed;
+    width: auto;
+    margin: .75rem auto;
     border-collapse: collapse;
     user-select: none;
     -webkit-user-select: none;
     font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.8rem;
+    line-height: 1.45;
     font-variant-numeric: tabular-nums;
   }}
-  .doc table.ports col.pair {{ width: 16%; }}
-  .doc table.ports col.block {{ width: 14%; }}
   .doc table.ports th, .doc table.ports td {{
-    padding: 0.32rem 0.6rem;
+    padding: .2rem clamp(.45rem, 1.5vw, 1rem);
     text-align: left;
     border-bottom: 1px solid var(--rule);
   }}
@@ -722,18 +744,7 @@ PAGE = """<!doctype html>
     overflow-wrap: break-word;
   }}
   .doc table.ports thead th[colspan] {{ text-transform: none; }}
-  /* the one line the table carries, set under it as a note rather than over it
-     as a title -- it points somewhere rather than saying what the table is */
-  .doc table.ports caption {{
-    caption-side: bottom;
-    padding-top: 0.7rem;
-    font-family: "IBM Plex Sans", ui-sans-serif, sans-serif;
-    font-size: 0.85rem;
-    color: var(--muted);
-    text-align: right;
-    user-select: text;
-    -webkit-user-select: text;
-  }}
+  .doc table.ports caption {{ caption-side: bottom; text-align: right; padding-top: .7rem; font-family: "IBM Plex Sans", sans-serif; font-size: .85rem; color: var(--muted); }}
   .doc table.ports tbody th {{ font-weight: 500; }}
   /* a and b are the two halves of one row, so the rule that separates them is
      the only vertical one in the table */
@@ -748,15 +759,29 @@ PAGE = """<!doctype html>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
+<header class="graph-top"><nav aria-label="Page navigation"><a href="/">Nishant Bhakar</a><div><a href="https://github.com/f4t4nt/degree-diameter-graphs">Source</a>{theme_button}</div></nav></header>
+<div class="graph-layout">
+<aside class="graph-contents"><nav aria-label="Contents"><ol>
+<li><a href="#blocks">Building blocks</a></li>
+<li><a href="#connectors">Connecting the blocks</a></li>
+<li><a href="#ports">Port assignment</a></li>
+<li><a href="#whole">The whole thing</a></li>
+</ol></nav></aside>
+<main>
 <div class="doc lead">
 
-<h1>Largest known degree-4, diameter-4 graph</h1>
+<header class="graph-heading" id="top">
+<p class="article-date">August 22nd, 2026</p>
+<h1>Largest known <span>degree-4,</span> <span>diameter-4</span> graph</h1>
 
-<p>{n} vertices and {m} edges. As of August 22nd, 2026, this is the largest
+<p class="abstract">{n} vertices and {m} edges. As of August 22nd, 2026, this is the largest
 known degree-4, diameter-4 graph. In simple terms, every vertex has 4
 neighbors (degree-4), and no two vertices are more than 4 apart
 (diameter-4).</p>
+</header>
 
+<section class="explanation"><div>
+<h2 id="blocks">Building blocks</h2>
 <p>The graph is built from three <span class="sym">K<sub>4,4</sub></span>
 graphs: complete bipartite graphs between four "L" and four "R" vertices.
 Each <span class="sym">L<sub>i</sub></span> and <span
@@ -764,57 +789,57 @@ class="sym">R<sub>j</sub></span> is connected via a port <span
 class="sym">P<sub>ij</sub></span>, for 24 vertices and 32 edges per <span
 class="sym">K<sub>4,4</sub></span>.</p>
 
-<figure>
-{block_svg}
-</figure>
-
 <p>The three of these account for 72 vertices and 96 edges. Every <span
 class="sym">L<sub>i</sub></span> and <span class="sym">R<sub>j</sub></span> is
 already at degree 4; every port is at degree 2, short two edges.</p>
+</div><figure>{block_svg}</figure></section>
 
+<section class="explanation"><div>
+<h2 id="connectors">Connecting the blocks</h2>
 <p>The remaining 32 vertices are connectors between the <span
 class="sym">K<sub>4,4</sub></span>s, in 16 matched pairs: X00a/X00b through
 X15a/X15b. Each connector has one edge to its partner and one edge into
 each <span class="sym">K<sub>4,4</sub></span>, bringing it to degree 4 and
 filling the 2 missing edges on each port.</p>
+</div><figure>{conn_svg}</figure></section>
 
-<figure>
-{conn_svg}
-</figure>
-
+<section class="graph-section">
+<h2 id="ports">Port assignment</h2>
 <p>This still leaves out the one thing that makes the graph work: the exact
 mapping between connectors and ports. That's the construction's free
 parameter, and it's what gets the diameter down to 4. One such assignment is
 shown below.</p>
+<div class="port-table">{table}</div>
+</section>
 
-{table}
-
-<h2>The whole thing</h2>
-<p>The full graph is shown below: the three <span
-class="sym">K<sub>4,4</sub></span>s along the top and the 16 connector pairs
-underneath. I originally found an asymmetric variant of this graph
+<section class="graph-section">
+<h2 id="whole">The whole thing</h2>
+<p>The full graph: three <span
+class="sym">K<sub>4,4</sub></span>s down the left, 16 connector pairs
+on the right.</p>
+<figure class="board">{full_svg}</figure>
+<p>I originally found an asymmetric variant of this graph
 via a <span class="sym">Z<sub>8</sub></span> <a
 href="https://en.wikipedia.org/wiki/Voltage_graph">voltage graph</a> lift of
 a 13-vertex base multigraph. After much effort yet failing to push past
 n=104, I revisited the graph and noticed it could be simplified into the
-more structured form shown below. I'm 40% confident it's optimal, but time
+more structured form shown here. I'm 40% confident it's optimal, but time
 will tell. :)</p>
 
 <p>Given the progress I made here with the assistance of Claude Fable, I
 decided to let it loose on the rest of the degree-diameter table, with <a
 href="https://github.com/f4t4nt/degree-diameter-graphs">good success</a>.</p>
+</section>
 
 </div>
-
-<figure class="board">
-{full_svg}
-</figure>
 
 <div class="doc tail">
-<a class="back" href="/">&larr; back</a>
+<a class="back" href="/">← Back to home</a>
 </div>
+</main></div>
 
 <script src="/assets/graph-interactive.js"></script>
+<script src="/assets/graph-contents.js"></script>
 <script>
   document.querySelectorAll(".gdiagram").forEach(window.initGraphDiagram);
 </script>
@@ -873,7 +898,15 @@ def build_page():
         "graph-connector": connector_figure(board, conn),
         "graph-board": full_figure(board),
     }
+    theme_button = re.search(
+        r'<button class="theme-toggle".*?</button>',
+        (ROOT / "index.html").read_text(),
+        re.S,
+    )
+    if theme_button is None:
+        raise RuntimeError("The homepage must provide the shared theme-toggle button")
     html = PAGE.format(
+        theme_button=theme_button[0],
         n=facts["n"],
         m=facts["m"],
         block_svg=figures["graph-block"],

@@ -447,6 +447,12 @@ a:hover {
   fill: transparent;
 }
 
+.gdiagram .ghit:focus-visible {
+  outline: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
 /* Except where a drawing takes a click as well: there a vertex can be pinned
    as a path source, and the pointer is the only thing that says so. Edges and
    silkscreen names in the same drawing are not clickable and keep the default
