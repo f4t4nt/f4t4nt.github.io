@@ -1,0 +1,62 @@
+% One copy of the circuit per modelled clock edge.
+%
+% The counts are the point of this figure, so they are given their own row
+% rather than being buried in the chain: 121 bits go in, 122 edges are
+% modelled, and 123 snapshots exist because one of them precedes every edge.
+\begin{tikzpicture}[figfont, x=1cm, y=1cm]
+
+\tikzset{
+  qstate/.style={fbox, minimum width=1.02cm, minimum height=0.92cm,
+    align=center, inner sep=1pt},
+  qfirst/.style={qstate, draw=figsoft, fill=figmute},
+  qfinal/.style={qstate, draw=figgreen, fill=figgreen!6, line width=0.9pt},
+  tstep/.style={fbox, draw=figclkline, fill=figviolet!14,
+    minimum width=0.66cm, minimum height=0.7cm, inner sep=1pt},
+  tlast/.style={tstep, draw=figorange, fill=figorange!12, line width=0.9pt},
+}
+
+% ---- the chain ---------------------------------------------------------
+\node[qfirst] (q0)   at (0,0)     {$Q_0$};
+\node[tstep]  (t0)   at (1.32,0)  {$T$};
+\node[qstate] (q1)   at (2.64,0)  {$Q_1$};
+\node[tstep]  (t1)   at (3.96,0)  {$T$};
+\node[qstate] (q2)   at (5.28,0)  {$Q_2$};
+\node[figsoft] (dots) at (6.5,0)  {$\cdots$};
+\node[qstate] (q120) at (7.72,0)  {$Q_{120}$};
+\node[tstep]  (t120) at (9.04,0)  {$T$};
+\node[qstate] (q121) at (10.36,0) {$Q_{121}$};
+\node[tlast]  (t121) at (11.74,0) {$T$};
+\node[qfinal] (q122) at (13.12,0) {$Q_{122}$};
+
+\foreach \a/\b in {q0/t0, t0/q1, q1/t1, t1/q2, q2/dots, dots/q120,
+                   q120/t120, t120/q121, q121/t121, t121/q122}{%
+  \draw[fflow] (\a) -- (\b);}
+
+\node[ftag, anchor=north] at (0,-0.52) {reset state};
+\node[ftag, anchor=north, text=figgreen] at (13.12,-0.52) {tested here};
+
+% the bits the solver is free to choose
+\foreach \n/\lbl in {t0/{$I_0$}, t1/{$I_1$}, t120/{$I_{120}$}}{%
+  \draw[fen] ($(\n.north)+(0,0.56)$) -- (\n.north);
+  \node[figfont, text=figmagenta, anchor=south] at ($(\n.north)+(0,0.58)$) {\lbl};}
+\node[ftag, text=figmagenta, anchor=south] at (6.5,0.62)
+  {one unknown bit enters at each enabled edge};
+
+% ---- what the protocol fixes -------------------------------------------
+\draw[decorate, decoration={brace, amplitude=3.5pt, mirror}, draw=figclkline,
+      line width=0.5pt] (-0.55,-0.95) -- (10.9,-0.95);
+\node[ftag, anchor=north, text=figclkline, align=center] at (5.18,-1.12)
+  {121 transitions with {\ttfamily enable = 1}\\each one captures one bit of the answer};
+
+\draw[decorate, decoration={brace, amplitude=3.5pt, mirror}, draw=figorange,
+      line width=0.5pt] (11.06,-0.95) -- (13.65,-0.95);
+\node[ftag, anchor=north, text=figorange, align=center] at (12.36,-1.12)
+  {1 transition, {\ttfamily enable = 0}\\the checker finalises};
+
+\node[fgood, anchor=west, align=left, minimum width=2.45cm, inner sep=5pt]
+  (ask) at (14.05,0)
+  {require {\ttfamily success}\\is true in $Q_{122}$};
+\draw[fverified] (q122) -- (ask);
+
+
+\end{tikzpicture}

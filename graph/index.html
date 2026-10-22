@@ -136,12 +136,6 @@
   /* a and b are the two halves of one row, so the rule that separates them is
      the only vertical one in the table */
   .doc table.ports .half { border-left: 1px solid var(--rule); }
-  /* the same faint tint the homepage list uses, for the same reason: a row is
-     seven cells wide and the eye needs to be told which seven */
-  .doc table.ports tbody tr { transition: background-color 0.25s ease-out; }
-  .doc table.ports tbody tr:hover {
-    background: color-mix(in srgb, var(--rule) 16%, var(--paper));
-  }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 </head>

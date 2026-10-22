@@ -54,6 +54,14 @@ body {
   font-kerning: normal;
 }
 
+table tbody tr {
+  transition: background-color 0.25s ease-out;
+}
+
+table tbody tr:hover {
+  background: color-mix(in srgb, var(--rule) 16%, var(--paper));
+}
+
 .wrap {
   max-width: 57rem;
   margin: 0 auto;

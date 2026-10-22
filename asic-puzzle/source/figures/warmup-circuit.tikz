@@ -1,0 +1,82 @@
+% The warm-up circuit as its source describes it.
+%
+% Clock, enable and reset are three separate signals, so they are drawn as
+% three separately coloured rails that visibly branch to both registers. A
+% single grey bundle would suggest they are one wire, which is the one thing a
+% reader must not conclude here.
+\begin{tikzpicture}[figfont]
+
+\tikzset{
+  blk/.style={fbox, minimum width=3.2cm, minimum height=1.55cm, align=center,
+    inner sep=5pt},
+  jdot/.style={circle, fill=#1, inner sep=0pt, minimum size=2.6pt},
+}
+
+% ---- the two registers -------------------------------------------------
+\node[blk, anchor=north west] (sra) at (3.4,0)
+  {{\bfseries 8-bit shift register}\\[1pt]
+   {\ttfamily\tiny sr\_a}\\[3pt]
+   \textcolor{figsoft}{holds the last eight}\\
+   \textcolor{figsoft}{bits that arrived on A}};
+
+\node[blk, anchor=north west] (srb) at (3.4,-2.9)
+  {{\bfseries 8-bit shift register}\\[1pt]
+   {\ttfamily\tiny sr\_b}\\[3pt]
+   \textcolor{figsoft}{holds the last eight}\\
+   \textcolor{figsoft}{bits that arrived on B}};
+
+% ---- serial data in ----------------------------------------------------
+\draw[fdata] (1.55,-0.42) -- (3.4,-0.42);
+\node[fmono, anchor=east] at (1.45,-0.42) {A};
+\draw[fdata] (1.55,-3.32) -- (3.4,-3.32);
+\node[fmono, anchor=east] at (1.45,-3.32) {B};
+
+% ---- three separate control rails --------------------------------------
+% Each rail enters at its own height, runs to its own vertical, and branches
+% to both registers. Filled dots mark real junctions; plain crossings are not
+% connections.
+\newcommand{\ctrlrail}[6]{% #1 style #2 colour #3 x #4 entry-y #5 up-y #6 down-y
+  \draw[#1, -] (0.62,#4) -- (#3,#4);
+  \draw[#1, -] (#3,#5) -- (#3,#6);
+  \draw[#1] (#3,#5) -- (3.4,#5);
+  \draw[#1] (#3,#6) -- (3.4,#6);
+  \node[jdot=#2] at (#3,#4) {};
+}
+\ctrlrail{fclk}{figclkline}{2.15}{-2.05}{-0.85}{-3.75}
+\ctrlrail{fen}{figmagenta}{2.55}{-2.32}{-1.12}{-4.02}
+\ctrlrail{frst}{figorange}{2.95}{-2.59}{-1.39}{-4.29}
+
+\node[fmono, anchor=east, text=figclkline] at (0.52,-2.05) {clk};
+\node[fmono, anchor=east, text=figmagenta] at (0.52,-2.32) {en};
+\node[fmono, anchor=east, text=figorange]  at (0.52,-2.59) {rst\_n};
+
+% ---- adder and comparison ----------------------------------------------
+\node[blk, anchor=north west, minimum width=2.7cm] (add) at (8.7,-1.05)
+  {{\bfseries 9-bit adder}\\[3pt]
+   $\mathrm{sum}=a+b$};
+
+\node[blk, anchor=north west, minimum width=3.1cm, draw=figgreen,
+      fill=figgreen!5] (cmp) at (13.0,-1.05)
+  {{\bfseries compare with 496}\\[3pt]
+   $S=[\mathrm{sum}=496]$};
+
+\draw[fbus] (sra.east) -- ++(0.55,0) |- ($(add.north west)+(0,-0.45)$);
+\node[fmonosoft, anchor=south] at (7.93,-1.36) {a\_reg[7:0]};
+\draw[fbus] (srb.east) -- ++(0.55,0) |- ($(add.north west)+(0,-1.10)$);
+\node[fmonosoft, anchor=north] at (7.93,-2.29) {b\_reg[7:0]};
+
+\draw[fbus] ($(add.north east)+(0,-0.775)$) -- ($(cmp.north west)+(0,-0.775)$);
+\node[ftag, anchor=south, text=figblue] at (12.2,-1.72) {9 bits};
+
+\draw[fverified] ($(cmp.north east)+(0,-0.775)$) -- ++(0.45,0);
+\node[fmono, anchor=west, text=figgreen] at (16.62,-1.83) {S};
+
+% ---- key ---------------------------------------------------------------
+\node[ftag, anchor=north west] at (0.62,-5.05)
+  {\figkeyitem{fdata}{data}\quad
+   \figkeyitem{fclk}{clk}\quad
+   \figkeyitem{fen}{en}\quad
+   \figkeyitem{frst}{rst\_n}\quad
+   \figkeyitem{fverified}{result}};
+
+\end{tikzpicture}

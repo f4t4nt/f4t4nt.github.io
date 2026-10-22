@@ -1,0 +1,120 @@
+% One mux, one wire, one flip-flop: where combinational logic stops and state
+% begins.
+%
+% The distinction being taught is about time, which a static schematic cannot
+% show, so the schematic is paired with a timing strip over the same three
+% nets. The strip is what carries the point: n7 moves whenever its inputs
+% move, while n28 moves only at an edge and ignores everything in between.
+% The zone tints are fitted to their contents rather than drawn as loose
+% rectangles around empty space.
+\begin{tikzpicture}[figfont]
+
+\tikzset{
+  pinlab/.style={fmono, inner sep=1.5pt},
+  zone/.style={rounded corners=4pt, line width=0.6pt,
+    dash pattern=on 2.5pt off 2pt},
+}
+
+% ======================= the circuit ====================================
+\draw[zone, draw=figaccent, fill=figwash] (1.95,-0.30) rectangle (4.20,-2.75);
+\node[figfont, anchor=south west, font=\sffamily\tiny\bfseries, text=figaccent]
+  at (1.95,-0.22) {COMBINATIONAL};
+\draw[zone, draw=figclkline, fill=figviolet!7] (6.35,-0.30) rectangle (9.35,-2.75);
+\node[figfont, anchor=south, font=\sffamily\tiny\bfseries, text=figclkline]
+  at (7.85,-0.22) {STATE};
+% the multiplexer
+\filldraw[draw=figaccent, fill=white, line width=0.8pt, rounded corners=1.5pt]
+  (2.35,-0.62) -- (3.80,-1.02) -- (3.80,-2.05) -- (2.35,-2.45) -- cycle;
+\node[figfont, font=\sffamily\tiny\bfseries] at (3.05,-1.34) {mux2};
+\node[fmonosoft] at (3.05,-1.58) {sr\_a/\_11\_};
+\node[pinlab, anchor=west] at (2.42,-0.95) {A1};
+\node[pinlab, anchor=west] at (2.42,-2.12) {A0};
+\node[pinlab, anchor=south] at (3.07,-2.17) {S};
+\node[pinlab, anchor=east] at (3.73,-1.53) {X};
+
+\draw[fdata] (0.75,-0.95) -- (2.35,-0.95);
+\node[fmono, anchor=east, text=figblue] at (0.68,-0.95) {n79};
+\draw[fen] (3.07,-3.62) -- (3.07,-2.26);
+\node[fmono, anchor=north, text=figmagenta] at (3.07,-3.68) {n80 = en};
+
+% the net recovered from geometry
+\draw[fverified, line width=1.3pt] (3.80,-1.53) -- (6.60,-1.00);
+\node[fmono, anchor=south, text=figgreen] at (5.20,-1.20) {n7};
+
+% the flip-flop
+\draw[draw=figclkline, fill=white, line width=0.8pt, rounded corners=1.5pt]
+  (6.60,-0.60) rectangle (8.95,-2.45);
+\node[figfont, font=\sffamily\tiny\bfseries] at (7.78,-1.30) {dfrtp};
+\node[fmonosoft] at (7.78,-1.54) {sr\_a/\_19\_};
+\node[pinlab, anchor=west] at (6.67,-1.00) {D};
+\node[pinlab, anchor=west] at (6.95,-1.88) {CLK};
+\node[pinlab, anchor=north] at (8.30,-2.12) {RESET\_B};
+\node[pinlab, anchor=east] at (8.88,-1.00) {Q};
+\draw[draw=figclkline, line width=0.8pt]
+  (6.60,-1.75) -- (6.87,-1.88) -- (6.60,-2.01);
+
+\draw[fclk] (4.75,-1.88) -- (6.60,-1.88);
+\node[ftag, anchor=north, text=figclkline] at (5.55,-1.94) {n78 = clk};
+
+\draw[frst] (8.30,-3.62) -- (8.30,-2.47);
+\node[fmono, anchor=north, text=figorange] at (8.30,-3.68) {n34 = rst\_n};
+
+\draw[fdata] (8.95,-1.00) -- (10.30,-1.00);
+\node[fmono, anchor=west, text=figblue] at (10.37,-1.00) {n28};
+
+% feedback from Q to the mux input
+\draw[fdata] (9.80,-1.00) -- (9.80,-3.25) -- (1.70,-3.25) -- (1.70,-2.12)
+  -- (2.35,-2.12);
+\node[circle, fill=figblue, inner sep=0pt, minimum size=2.6pt] at (9.80,-1.00) {};
+
+% ======================= the same nets, over time =======================
+\coordinate (timing-west) at (10.95,-0.22);
+\coordinate (timing-east) at (15.95,-0.22);
+\node[figfont, anchor=north, font=\sffamily\tiny\bfseries, text=figink]
+  at ($(timing-west)!0.5!(timing-east)$) {THE SAME THREE NETS, OVER TIME};
+
+% Stretch the timing strip vertically while preserving its bottom at exactly
+% y=-3.31075 cm.  With the lower local bound at -3.05, a vertical scale of
+% 0.42 requires shift_y=-3.31075+3.05(0.42)=-2.02975 cm.
+\begin{scope}[shift={(11.45,-2.02975)}, x=0.50cm, y=0.42cm]
+  \foreach \x in {0,3,6,9}{%
+    \draw[figrule, line width=0.4pt, dash pattern=on 1pt off 1.4pt]
+      (\x,-3.05) -- (\x,2.45);}
+
+  % the clock, with its rising edges marked on the trace itself
+  \node[fmono, anchor=east, text=figclkline] at (-0.3,1.60) {n78};
+  \draw[figclkline, line width=0.8pt]
+    (0,1.25) -- (0,2.10) -- (1.5,2.10) -- (1.5,1.25) -- (3,1.25) -- (3,2.10) --
+    (4.5,2.10) -- (4.5,1.25) -- (6,1.25) -- (6,2.10) -- (7.5,2.10) --
+    (7.5,1.25) -- (9,1.25);
+  \foreach \x in {0,3,6}{%
+    \fill[figorange] (\x-0.22,1.58) -- (\x+0.22,1.58) -- (\x,2.00) -- cycle;}
+
+  % n7 is free to move whenever its inputs move
+  \node[fmono, anchor=east, text=figgreen] at (-0.3,-0.25) {n7};
+  \draw[figgreen, line width=0.9pt]
+    (0,-0.65) -- (1.0,-0.65) -- (1.0,0.25) -- (3.4,0.25) -- (3.4,-0.65) --
+    (4.0,-0.65) -- (4.0,0.25) -- (5.6,0.25) -- (5.6,-0.65) -- (9,-0.65);
+
+  % n28 steps only at an edge, to whatever n7 held just before it
+  \node[fmono, anchor=east, text=figblue] at (-0.3,-2.10) {n28};
+  \draw[figblue, line width=1.0pt]
+    (0,-2.50) -- (3,-2.50) -- (3,-1.60) -- (6,-1.60) -- (6,-2.50) -- (9,-2.50);
+
+  \foreach \x in {3,6}{%
+    \draw[figsoft, line width=0.5pt, dash pattern=on 1.2pt off 1.2pt,
+          -{Latex[length=1.2mm]}] (\x,-0.25) -- (\x,-1.90);}
+\end{scope}
+
+% The full composition spans approximately x=0 to x=16.  Center the key on
+% that span instead of aligning it with the left-hand circuit.
+\coordinate (figure-west) at (0,-4.55);
+\coordinate (figure-east) at (16,-4.55);
+\node[ftag, anchor=north] at ($(figure-west)!0.5!(figure-east)$)
+  {\figkeyitem{fdata}{data}\quad
+   \figkeyitem{fclk}{clock}\quad
+   \figkeyitem{fen}{enable}\quad
+   \figkeyitem{frst}{reset}\quad
+   \figkeyitem{fverified}{net recovered from geometry}};
+
+\end{tikzpicture}

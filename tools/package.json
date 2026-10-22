@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "dependencies": {
+    "katex": "0.16.21",
+    "three": "0.173.0",
+    "three-viewport-gizmo": "2.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

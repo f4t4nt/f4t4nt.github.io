@@ -1,0 +1,124 @@
+% Shared visual system for every TikZ figure in this report.
+% Colours are sampled from repo/layout.png, the annotated layout image that
+% ships with the puzzle; see figures/src/palette.py for the measurement.
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds,shapes.geometric,
+  decorations.pathreplacing,patterns}
+
+\definecolor{figink}{HTML}{172033}     % body ink
+\definecolor{figsoft}{HTML}{5B6472}    % secondary text
+\definecolor{figaccent}{HTML}{3157A4}  % structure, arrows, frames
+\definecolor{figblue}{HTML}{2196F3}    % layout.png: routing
+\definecolor{figviolet}{HTML}{B388FF}  % layout.png: straps
+\definecolor{figorange}{HTML}{FF8C1A}  % layout.png: vertical bars
+\definecolor{figmagenta}{HTML}{E040E0} % layout.png: fine routes
+\definecolor{figgold}{HTML}{C9A227}    % layout.png: local interconnect
+\definecolor{figgreen}{HTML}{0A7D33}   % layout.png: output labels; used for
+                                       % verified facts and final results
+% The layout violet is a fill colour: as a hairline stroke or as small text it
+% reads as grey. This is the same hue carried toward the ink so that clock
+% wires and clock labels stay legible at figure sizes.
+\definecolor{figclkline}{HTML}{7B52C4}
+\definecolor{figrule}{HTML}{B9C0CC}    % muted outlines
+\definecolor{figmute}{HTML}{F1F4F8}    % muted fills
+\definecolor{figwash}{HTML}{EEF3FC}    % pale accent wash
+
+% Narrow boxes hyphenate badly at this size, and a broken word costs more
+% legibility than a ragged edge saves.
+\newcommand{\fignohyphen}{\hyphenchar\font=-1 \hyphenpenalty=10000
+  \exhyphenpenalty=10000 \tolerance=3000 \emergencystretch=3em}
+
+% A card: eyebrow, title, body, hairline, and a monospace footer pinned to the
+% bottom edge. Keeping the footer inside the frame stops the artefact names
+% floating loose underneath, and a fixed height keeps a row of cards even.
+% #1 name  #2 (x,y) of the top-left corner  #3 width/cm  #4 height/cm
+% #5 style  #6 eyebrow  #7 title  #8 body  #9 footer
+% The footer is anchored to the bottom edge and grows upward, so a two- or
+% three-line footer stays inside the frame instead of spilling past it, and the
+% hairline is placed from the footer's own top edge rather than a guessed offset.
+\newcommand{\figcard}[9]{%
+  \node[#5, anchor=north west, minimum width=#3cm, minimum height=#4cm,
+        inner sep=0pt] (#1) at #2 {};
+  \node[ftag, anchor=north west] at ($(#1.north west)+(0.22,-0.13)$) {#6};
+  \node[figfont, anchor=north west, font=\sffamily\scriptsize\bfseries]
+    at ($(#1.north west)+(0.22,-0.42)$) {#7};
+  \node[figfont, anchor=north west, align=left,
+        text width={\dimexpr #3cm-0.44cm}]
+    at ($(#1.north west)+(0.22,-0.76)$) {\fignohyphen #8};
+  \node[fmonosoft, anchor=south west, align=left,
+        text width={\dimexpr #3cm-0.44cm}]
+    (#1-foot) at ($(#1.south west)+(0.22,0.14)$) {#9};
+  \draw[figrule, line width=0.4pt]
+    ($(#1-foot.north west)+(0,0.10)$) -- ($(#1-foot.north east)+(0,0.10)$);
+}
+
+\tikzset{
+  % applies inside every node's own text group, where it still governs how
+  % lines are broken
+  every node/.append style={execute at begin node=\fignohyphen},
+  figfont/.style={font=\sffamily\scriptsize, text=figink},
+  % a plain content box
+  fbox/.style={figfont, draw=figaccent, fill=white, rounded corners=2pt,
+    line width=0.5pt, align=center, inner sep=4pt},
+  % a stage in a pipeline: title line plus supporting lines
+  fstage/.style={fbox, fill=figwash, align=left, text width=#1},
+  fstage/.default=3.1cm,
+  % something established by evidence
+  fgood/.style={fbox, draw=figgreen, fill=figgreen!5},
+  % something taken on trust from outside the file
+  ftrust/.style={fbox, draw=figorange, fill=figorange!6},
+  % de-emphasised context
+  fmuted/.style={figfont, draw=figrule, fill=figmute, rounded corners=2pt,
+    line width=0.4pt, align=center, inner sep=3.5pt, text=figsoft},
+  % arrows
+  fflow/.style={-{Latex[length=2.1mm,width=1.5mm]}, draw=figaccent,
+    line width=0.6pt},
+  fthin/.style={-{Latex[length=1.6mm,width=1.2mm]}, draw=figsoft,
+    line width=0.4pt},
+  fdep/.style={draw=figsoft, line width=0.4pt, dash pattern=on 1.6pt off 1.4pt},
+  % labels
+  ftag/.style={font=\sffamily\tiny, text=figsoft, inner sep=1.5pt},
+  fmono/.style={font=\ttfamily\tiny, text=figink, inner sep=1pt},
+  fmonosoft/.style={font=\ttfamily\tiny, text=figsoft, inner sep=1pt},
+  fhead/.style={font=\sffamily\scriptsize\bfseries, text=figaccent},
+  %
+  % ---- signal roles -----------------------------------------------------
+  % One colour per role, used the same way in every schematic figure, so a
+  % reader who learns the key once can carry it between diagrams:
+  %   data      routing blue    the value being computed or carried
+  %   clock     violet          when state advances, never a data term
+  %   enable    magenta         whether this edge captures anything
+  %   reset     orange          the asynchronous override
+  % Green stays reserved for checked facts and final results. Captions identify
+  % the smaller subset checked against genuinely independent evidence.
+  fdata/.style={-{Latex[length=2.1mm,width=1.5mm]}, draw=figblue,
+    line width=0.9pt},
+  fclk/.style={-{Latex[length=2.1mm,width=1.5mm]}, draw=figclkline,
+    line width=0.9pt},
+  fen/.style={-{Latex[length=2.1mm,width=1.5mm]}, draw=figmagenta,
+    line width=0.9pt},
+  frst/.style={-{Latex[length=2.1mm,width=1.5mm]}, draw=figorange,
+    line width=0.9pt},
+  fverified/.style={-{Latex[length=2.1mm,width=1.5mm]}, draw=figgreen,
+    line width=0.9pt},
+  % a bus, drawn heavier than a single wire
+  fbus/.style={-{Latex[length=2.4mm,width=2.0mm]}, draw=figblue,
+    line width=1.7pt},
+  % an explanatory strip that runs under a figure
+  fnote/.style={fmuted, align=left, inner sep=6pt},
+  % a small square swatch used in figure keys
+  fswatch/.style={draw=#1, fill=#1, line width=0pt},
+}
+
+% A key entry: a short coloured rule plus a label, for in-figure legends.
+% #1 colour  #2 label
+\newcommand{\figkeyitem}[2]{%
+  \tikz[baseline=-0.5ex]{\draw[#1, line width=0.9pt] (0,0) -- (0.34,0);}\,%
+  {\ttfamily\tiny #2}}
+
+% A section heading inside a figure, with a hairline under it.
+% #1 node name  #2 (x,y)  #3 width/cm  #4 text
+\newcommand{\figband}[4]{%
+  \node[fhead, anchor=north west, inner sep=1pt] (#1) at #2 {#4};
+  \draw[figrule, line width=0.4pt]
+    ($(#1.south west)+(0,-0.02)$) -- ++(#3,0);
+}
