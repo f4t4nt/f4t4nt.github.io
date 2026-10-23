@@ -79,6 +79,9 @@
 .section-narrative > :last-child { margin-bottom: 0; }
 .asic-page .section-heading > h2 { margin-bottom: 0; }
 .asic-page .section-heading + .article-section > h3 { margin-top: 1rem; }
+@media (width < 1200px) {
+  .section-notebook { margin-top: 1.5rem; }
+}
 @media (min-width: 1200px) {
   .read-with-code .article-shell { max-width: 1800px; padding-inline: 2rem; }
   .read-with-code .article-layout { grid-template-columns: 150px minmax(0, 1fr); gap: 2rem; }
