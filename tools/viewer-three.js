@@ -43,6 +43,7 @@ async function loadScene() {
   const camera = new THREE.PerspectiveCamera(data.fov, 1, .01, 10000);
   camera.up.set(0, 0, 1);
   const controls = new OrbitControls(camera, renderer.domElement);
+  controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
   controls.enablePan = false;
   renderer.domElement.addEventListener("pointerdown", event => {
     controls.enablePan = event.button === 0 && event.ctrlKey;
