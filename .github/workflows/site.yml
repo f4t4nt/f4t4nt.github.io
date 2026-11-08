@@ -1,0 +1,74 @@
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: astral-sh/setup-uv@v6
+      - run: python3 -m unittest discover -s tools -p 'test_*site.py' -v
+      - name: Check generated articles
+        run: |
+          npm ci --prefix tools --no-audit --no-fund
+          uv run --python 3.12 tools/generate_asic_doc.py asic-puzzle
+          python3 tools/generate_graph_doc.py
+          git diff --exit-code
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/configure-pages@v5
+      - name: Prepare site
+        env:
+          SITE_SCRIPT: ${{ secrets.SITE_SCRIPT }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import pathlib
+          pathlib.Path(os.environ["RUNNER_TEMP"], "site.js").write_text(os.environ["SITE_SCRIPT"])
+          PY
+          if ! node --check "$RUNNER_TEMP/site.js" >/dev/null 2>&1; then
+            echo "Invalid site script"
+            exit 1
+          fi
+          python3 tools/build_site.py --script "$RUNNER_TEMP/site.js" --output "$RUNNER_TEMP/site"
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/site
+      - uses: actions/deploy-pages@v4
+        id: deployment
